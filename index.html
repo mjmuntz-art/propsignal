@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>var API_URL = 'PASTE_YOUR_EXEC_LINK_HERE';</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PropSignal</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PropSignal">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#E9EDF2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F141B" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF2; --panel:#FFFFFF; --panel-2:#F4F6F9; --ink:#17202B; --ink-2:#4A5666; --ink-3:#7B8696;
+  --line:#D5DBE3; --blue:#1F4FD8; --win:#17855A; --loss:#C23B2A; --push:#8A6D1E; --warn:#B7791F;
+  --shadow:0 1px 0 rgba(23,32,43,.06),0 8px 24px -16px rgba(23,32,43,.35);
+  --display:'Barlow Condensed',system-ui,sans-serif; --text:'Barlow',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0F141B;--panel:#18202A;--panel-2:#1E2733;--ink:#EEF2F6;--ink-2:#B4BECB;--ink-3:#7E8A99;
+    --line:#2A3542;--blue:#6F94FF;--win:#3DBB86;--loss:#F06A57;--push:#D8B24E;--warn:#E3A847;
+    --shadow:0 1px 0 rgba(0,0,0,.4),0 10px 28px -18px rgba(0,0,0,.9);}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 48px) max(16px,env(safe-area-inset-left))}
+html{-webkit-text-size-adjust:100%}
+body{overscroll-behavior-y:none}
+.num{font-variant-numeric:tabular-nums}
+
+/* Top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.mark{display:flex;align-items:baseline;gap:10px}
+.mark h1{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.2px;margin:0;line-height:1}
+.mark h1 b{color:var(--blue)}
+.mark span{color:var(--ink-3);font-size:14px}
+.status{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+.dot.ok{background:var(--win)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--loss)}
+.refresh{cursor:pointer;background:var(--ink);color:var(--panel);border:0;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px}
+
+/* Hero: tonight + season bug */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media (max-width:900px){.hero{grid-template-columns:1fr}}
+.hero h2{font-family:var(--display);font-weight:700;font-size:34px;margin:0 0 2px;line-height:1.05}
+.sub{color:var(--ink-2);margin:0 0 14px;font-size:15px}
+
+/* Lower-third play strips (the signature element) */
+.plays{display:flex;flex-direction:column;gap:10px}
+.strip{position:relative;display:grid;grid-template-columns:10px 64px minmax(0,1fr) auto;align-items:stretch;background:var(--panel);border-radius:4px 14px 14px 4px;box-shadow:var(--shadow);overflow:hidden}
+.strip .bar{background:var(--team)}
+.strip .face{position:relative;background:linear-gradient(180deg,color-mix(in srgb,var(--team) 22%,transparent),transparent);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.strip .face img.hs{width:72px;height:auto;display:block;margin-bottom:-2px}
+.strip .face img.lg{position:absolute;top:6px;left:6px;width:20px;height:20px}
+.strip .face img.lgbig{width:44px;height:44px;align-self:center}
+.strip .who{padding:10px 14px;min-width:0}
+.strip .name{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .meta{color:var(--ink-3);font-size:13px;margin-top:2px}
+.strip .pick{font-family:var(--display);font-weight:800;font-size:28px;line-height:1;margin-top:6px;letter-spacing:.2px}
+.strip .pick small{font-weight:600;font-size:17px;color:var(--ink-2);margin-left:4px}
+.strip .facts{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink-2)}
+.strip .facts strong{color:var(--ink);font-weight:600}
+.strip .side{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:6px;padding:10px 14px;background:var(--panel-2);min-width:118px;border-left:1px solid var(--line)}
+.price{font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
+.book{font-size:12px;color:var(--ink-3)}
+.tag{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:var(--ink);color:var(--panel)}
+.tag.lean{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.strip.pending{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+.strip.pending .side{background:transparent}
+.lock{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.lock.on{color:var(--win)} .lock.off{color:var(--warn)}
+.group{font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink-2);margin:6px 0 2px}
+.dropnote{font-size:12px;color:var(--warn);font-weight:600}
+@media (max-width:620px){
+  .strip{grid-template-columns:8px 52px minmax(0,1fr)}
+  .strip .side{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;border-left:0;border-top:1px solid var(--line)}
+  .strip .face img.hs{width:58px}
+  .strip .pick{font-size:24px}
+}
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:22px;color:var(--ink-2)}
+.empty strong{color:var(--ink);display:block;font-size:17px;margin-bottom:4px}
+
+/* Season scorebug */
+.bug{background:var(--ink);color:var(--panel);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+@media (prefers-color-scheme:dark){.bug{background:#05080C;color:var(--ink)}}
+.bug .row{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.12)}
+.bug .cell{padding:12px 14px}
+.bug .cell+.cell{border-left:1px solid rgba(255,255,255,.12)}
+.bug .k{font-size:12px;opacity:.7}
+.bug .v{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.05}
+.bug .head{padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline}
+.bug .head .t{font-family:var(--display);font-weight:700;font-size:18px}
+.bug .head .s{font-size:12px;opacity:.7}
+.bug .big{padding:4px 14px 14px;display:flex;align-items:baseline;gap:12px}
+.bug .big .wl{font-family:var(--display);font-weight:800;font-size:56px;line-height:.95;letter-spacing:.5px}
+.bug .big .u{font-family:var(--display);font-weight:700;font-size:24px;white-space:nowrap}
+.pos{color:var(--win)} .neg{color:var(--loss)}
+.bug .pos{color:#5BD49F} .bug .neg{color:#FF8A78}
+.spark{display:block;width:100%;height:56px}
+.bug .sparkwrap{padding:0 14px 12px}
+.rules{margin-top:12px;font-size:13px;color:var(--ink-2);background:var(--panel);border-radius:12px;padding:12px 14px;border:1px solid var(--line)}
+.rules b{color:var(--ink)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin:30px 0 14px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;padding:10px 14px;font-family:var(--display);font-weight:700;font-size:19px;color:var(--ink-3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--blue)}
+.panel{display:none}.panel.on{display:block}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.card h3{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 4px}
+.card p.note{margin:0 0 10px;color:var(--ink-3);font-size:13px}
+
+/* Split rows with hit-rate bar vs break-even */
+.split{display:grid;grid-template-columns:96px minmax(0,1fr) 64px 70px;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.split:first-of-type{border-top:0}
+.split .lab{font-family:var(--display);font-weight:700;font-size:17px}
+.track{position:relative;height:10px;background:var(--panel-2);border-radius:5px;overflow:hidden}
+.track .fill{position:absolute;inset:0 auto 0 0;background:var(--blue);border-radius:5px}
+.track .be{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.split .r{text-align:right;color:var(--ink-2)}
+.split .r strong{color:var(--ink)}
+.legend{font-size:12px;color:var(--ink-3);margin-top:8px}
+
+/* Results list */
+.res{display:grid;grid-template-columns:62px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.res:first-child{border-top:0}
+.chip{font-family:var(--display);font-weight:800;font-size:15px;text-align:center;padding:3px 0;border-radius:4px;color:#fff}
+.chip.HIT{background:var(--win)} .chip.MISS{background:var(--loss)} .chip.PUSH{background:var(--push)} .chip.DNP,.chip.VOID{background:var(--ink-3)}
+.res .p{font-weight:600}
+.res .d{font-size:13px;color:var(--ink-3)}
+.res .act{font-family:var(--display);font-weight:700;font-size:18px;text-align:right}
+.res .u{font-family:var(--display);font-weight:700;font-size:18px;min-width:56px;text-align:right}
+
+/* Board table */
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.search{flex:1;min-width:180px;max-width:280px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:14px}
+.tablewrap{background:var(--panel);border-radius:12px;box-shadow:var(--shadow);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{position:sticky;top:0;background:var(--panel-2);text-align:left;font-weight:600;color:var(--ink-2);padding:9px 10px;font-size:13px;white-space:nowrap;cursor:pointer;user-select:none}
+td{padding:8px 10px;border-top:1px solid var(--line);white-space:nowrap}
+td.pl{font-weight:600}
+td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
+.dec{font-family:var(--display);font-weight:700;font-size:13px;padding:1px 6px;border-radius:3px}
+.dec.PLAY{background:var(--ink);color:var(--panel)} .dec.LEAN{box-shadow:inset 0 0 0 1.5px var(--ink)} .dec.WATCH{color:var(--warn)} .dec.PASS{color:var(--ink-3)}
+.foot{margin-top:28px;color:var(--ink-3);font-size:13px}
+.err{background:var(--panel);border-left:4px solid var(--loss);padding:16px;border-radius:8px}
+.loading{padding:60px 0;text-align:center;color:var(--ink-3);font-family:var(--display);font-size:22px}
+@media (prefers-reduced-motion:no-preference){
+  .plays.enter .strip{animation:slide .45s cubic-bezier(.2,.7,.2,1) both}
+  .plays.enter .strip:nth-child(2){animation-delay:.06s}.plays.enter .strip:nth-child(3){animation-delay:.12s}
+  .plays.enter .strip:nth-child(4){animation-delay:.18s}.plays.enter .strip:nth-child(5){animation-delay:.24s}
+  @keyframes slide{from{transform:translateX(-18px);opacity:0}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">Loading tonight's card…</div></div>
+
+<script>
+(function(){
+  var state = {data:null, tab:'record', boardStat:'ALL', boardOnly:false, q:'', sort:{k:'edge',d:-1}};
+  var STAT = {PTS:'pts', REB:'reb', AST:'ast', '3PT':'threes'};
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function signed(v,dp){var n=Number(v);var t=Math.abs(n).toFixed(dp);return (n>0?'+':(n<0?'\u2212':''))+t;}
+  function odds(o){if(o==null||o==='')return '—';o=Number(o);return (o>0?'+':(o<0?'\u2212':''))+Math.abs(o);}
+  function words(s){s=String(s||'').replace(/_/g,' ').toLowerCase();return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+  function pct(x,d){if(x==null)return '—';var t=(x*100).toFixed(d==null?1:d);return (x<0?'\u2212'+t.slice(1):t)+'%';}
+  function pts(x){if(x==null)return '—';return signed(x*100,1);}
+  function units(u){if(u==null)return '—';return signed(u,2)+'u';}
+  function cls(u){return u>0?'pos':(u<0?'neg':'');}
+  function wl(r){return r.w+'–'+r.l+(r.p?'–'+r.p:'');}
+  function dayLabel(k){if(!k)return '';var p=k.split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
+  function breakEven(o){o=Number(o);if(!isFinite(o)||!o)return null;return o<0?-o/(-o+100):100/(o+100);}
+
+  var lastLoad=0, loading=false;
+  function fail(title, detail){
+    document.getElementById('app').innerHTML='<div class="err"><strong>'+esc(title)+'</strong><br>'+detail+
+      '<br><br><button class="refresh" onclick="location.reload()">Try again</button></div>';
+  }
+  function load(){
+    var app=document.getElementById('app');
+    if(window.__CARD_SAMPLE__){state.data=window.__CARD_SAMPLE__;render();return;}
+    if(!API_URL||API_URL.indexOf('/exec')===-1){
+      fail("Link is missing.","Open index.html on GitHub, tap the pencil, and paste your Apps Script web app link (it ends in /exec) on line 5 between the quotes.");return;}
+    if(loading)return; loading=true;
+    fetch(API_URL+(API_URL.indexOf('?')===-1?'?':'&')+'api=card&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+      .then(function(r){return r.text().then(function(t){return {status:r.status,text:t};});})
+      .then(function(res){
+        loading=false;
+        var t=(res.text||'').trim();
+        if(t.charAt(0)==='<'){
+          fail("Couldn't load the card: the script sent a web page instead of data.",
+            "In Apps Script go to Deploy → Manage deployments → pencil. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, choose <b>New version</b>, and Deploy.");return;}
+        var d; try{d=JSON.parse(t);}catch(e){fail("Couldn't load the card: the data was unreadable.","Status "+res.status+". Deploy a new version of the script and try again.");return;}
+        if(!d||d.ok===false){fail("The card could not load.",esc(d&&d.message||'No data returned.'));return;}
+        lastLoad=Date.now(); state.data=d; render();
+      })
+      .catch(function(e){loading=false;
+        fail("Couldn't reach your script.","Check your connection. If it keeps happening, confirm the /exec link on line 5 of index.html. ("+esc(e&&e.message||e)+")");});
+  }
+  // Coming back to the app: refresh if the card is more than 10 minutes old.
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&state.data&&Date.now()-lastLoad>10*60000)load();});
+  setInterval(function(){if(document.visibilityState==='visible'&&state.data&&Date.now()-lastLoad>10*60000)load();},60000);
+
+  function statusPills(d){
+    var pub=(d.publication&&d.publication.status)||'CHECK';
+    var ok=pub==='APPROVED_CURRENT';
+    var sys=d.system||{};
+    var auto=sys.automation||{};
+    var out='<span class="pill" title="'+esc(d.publication&&d.publication.reason)+'"><span class="dot '+(ok?'ok':'warn')+'"></span>'+(ok?'Slate published':'Slate not current')+'</span>';
+    out+='<span class="pill"><span class="dot '+(auto.healthy||auto.enabled?'ok':'warn')+'"></span>'+(auto.enabled?'Automation on':'Automation off')+'</span>';
+    out+='<span class="pill">Updated '+esc(d.refreshedAt)+'</span>';
+    out+='<button class="refresh" id="refreshBtn">Refresh</button>';
+    return out;
+  }
+
+  function strip(p){
+    var pending=!p.locked;
+    var pick=(p.direction==='Over'?'Over ':'Under ')+(p.line==null?'—':p.line);
+    var face=p.headshot?'<img class="hs" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':'';
+    var logo=p.teamLogo?'<img class="'+(p.headshot?'lg':'lgbig')+'" alt="'+esc(p.team)+'" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'';
+    return '<article class="strip'+(pending?' pending':'')+'" style="--team:'+esc(p.teamColor||'#334155')+'">'+
+      '<div class="bar"></div><div class="face">'+logo+face+'</div>'+
+      '<div class="who"><div class="name">'+esc(p.player)+'</div>'+
+      '<div class="meta">'+esc(p.team)+' vs '+esc(p.opp)+(p.tip?', tips '+esc(p.tip):'')+'</div>'+
+      '<div class="pick num">'+esc(pick)+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></div>'+
+      '<div class="facts num"><span>Edge <strong>'+pts(p.edge)+' pts</strong></span><span>Grade <strong>'+esc(p.grade||'—')+'</strong></span>'+
+      '<span>Proj <strong>'+(p.proj==null?'—':p.proj)+'</strong></span><span>L5 <strong>'+esc(p.l5||'—')+'</strong></span>'+
+      '<span>Hit chance <strong>'+pct(p.modelP,0)+'</strong> vs '+pct(p.breakEven,0)+' needed</span></div>'+
+
+      '</div>'+
+      '<div class="side"><span class="tag'+(p.decision==='LEAN'?' lean':'')+'">'+esc(p.decision)+'</span>'+
+      '<span class="price num">'+odds(p.odds)+'</span><span class="book">'+esc(p.book||'')+'</span>'+
+      (pending?'<span class="lock off">Can change until '+esc(p.locksAt||'lock')+'</span>':'<span class="lock on">Locked '+esc(p.lockedAt)+'</span>')+'</div>'+
+      '</article>';
+  }
+
+  function groupStrips(list){
+    var locked=list.filter(function(p){return p.locked;}), pend=list.filter(function(p){return !p.locked;});
+    var out='';
+    if(locked.length)out+=(pend.length?'<div class="group">Locked</div>':'')+locked.map(strip).join('');
+    if(pend.length)out+='<div class="group">Not locked yet</div>'+pend.map(strip).join('');
+    return out;
+  }
+
+  function spark(daily){
+    if(!daily||daily.length<2)return '';
+    var w=272,h=56,pad=4,vals=daily.map(function(d){return d.cumulative;});vals.unshift(0);
+    var mn=Math.min.apply(null,vals.concat([0])),mx=Math.max.apply(null,vals.concat([0]));if(mx===mn){mx+=1;mn-=1;}
+    var x=function(i){return pad+i*(w-2*pad)/(vals.length-1);},y=function(v){return h-pad-(v-mn)*(h-2*pad)/(mx-mn);};
+    var path=vals.map(function(v,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);}).join(' ');
+    var last=vals[vals.length-1];
+    return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" role="img" aria-label="Cumulative units by day">'+
+      '<line x1="0" x2="'+w+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="currentColor" stroke-opacity=".25" stroke-dasharray="3 3"/>'+
+      '<path d="'+path+'" fill="none" stroke="'+(last>=0?'#5BD49F':'#FF8A78')+'" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  function bug(d){
+    var s=d.record.season,l7=d.record.last7;
+    return '<aside class="bug" aria-label="Season record">'+
+      '<div class="head"><span class="t">Season record</span><span class="s">flat 1 unit per play</span></div>'+
+      '<div class="big num"><span class="wl">'+wl(s)+'</span><span class="u '+cls(s.units)+'">'+units(s.units)+'</span></div>'+
+      '<div class="sparkwrap">'+spark(d.record.daily)+'</div>'+
+      '<div class="row"><div class="cell"><div class="k">Hit rate</div><div class="v num">'+pct(s.hitRate)+'</div></div>'+
+      '<div class="cell"><div class="k">ROI</div><div class="v num '+cls(s.roi)+'">'+(s.roi==null?'—':pct(s.roi))+'</div></div></div>'+
+      '<div class="row"><div class="cell"><div class="k">Last 7 days</div><div class="v num">'+wl(l7)+'</div></div>'+
+      '<div class="cell"><div class="k">Last 7 units</div><div class="v num '+cls(l7.units)+'">'+units(l7.units)+'</div></div></div>'+
+      '</aside>';
+  }
+
+  function splitRows(list,showBe){
+    if(!list||!list.length)return '<p class="note">No graded plays yet.</p>';
+    return list.map(function(r){
+      var dec=r.w+r.l, hr=dec?r.w/dec:0;
+      return '<div class="split"><span class="lab">'+esc(r.key)+'</span>'+
+        '<div class="track" title="'+(dec?pct(hr)+' hit rate':'no decisions')+'"><div class="fill" style="width:'+(hr*100).toFixed(1)+'%"></div>'+
+        (showBe?'<div class="be" style="left:52.4%"></div>':'')+'</div>'+
+        '<span class="r num"><strong>'+wl(r)+'</strong></span><span class="r num '+cls(r.units)+'">'+units(r.units)+'</span></div>';
+    }).join('');
+  }
+
+  function recordPanel(d){
+    var R=d.record;
+    return '<div class="grid2">'+
+      '<section class="card"><h3>Play vs lean</h3><p class="note">Bars show hit rate. The tick marks 52.4%, break-even at −110.</p>'+splitRows(R.byDecision,true)+'</section>'+
+      '<section class="card"><h3>By stat</h3><p class="note">Which markets the rule is winning in.</p>'+splitRows(R.byStat,true)+'</section>'+
+      '<section class="card"><h3>By xEP grade</h3><p class="note">Plays only come from A+, A and A− grades.</p>'+splitRows(R.byGrade,true)+'</section>'+
+      '<section class="card"><h3>By V2 edge</h3><p class="note">If the edge means anything, bigger edges should win more.</p>'+splitRows(R.byEdge,true)+'</section>'+
+      '<section class="card"><h3>Over vs under</h3><p class="note">Split by direction.</p>'+splitRows(R.byDirection,true)+'</section>'+
+      '<section class="card"><h3>By day</h3><p class="note">Units won or lost each slate.</p>'+dailyRows(R.daily)+'</section>'+
+      '</div>';
+  }
+  function dailyRows(daily){
+    if(!daily||!daily.length)return '<p class="note">No graded slates yet.</p>';
+    return daily.slice().reverse().slice(0,14).map(function(x){
+      return '<div class="split"><span class="lab" style="font-size:15px">'+esc(dayLabel(x.date))+'</span><span></span>'+
+        '<span class="r num"><strong>'+x.w+'–'+x.l+(x.p?'–'+x.p:'')+'</strong></span><span class="r num '+cls(x.units)+'">'+units(x.units)+'</span></div>';
+    }).join('');
+  }
+
+  function resultsPanel(d){
+    if(!d.recent.length)return '<div class="empty"><strong>No graded plays yet.</strong>Plays are graded automatically after their games finish and player game logs arrive, usually by the next morning.</div>';
+    return '<section class="card">'+d.recent.map(function(p){
+      var pick=(p.direction==='Over'?'Over ':'Under ')+p.line+' '+(STAT[p.stat]||p.stat);
+      return '<div class="res"><span class="chip '+esc(p.outcome)+'">'+esc(p.outcome)+'</span>'+
+        '<div><div class="p">'+esc(p.player)+', '+esc(pick)+'</div><div class="d">'+esc(dayLabel(p.date))+', '+odds(p.odds)+' '+esc(p.book)+', edge '+pts(p.edge)+', grade '+esc(p.grade)+(p.decision==='LEAN'?', lean':'')+(p.clvLine!=null?', CLV '+(p.clvLine>0?'+':'')+p.clvLine:'')+'</div></div>'+
+        '<span class="act num">'+(p.actual==null?'—':p.actual)+'</span><span class="u num '+cls(p.units)+'">'+units(p.units)+'</span></div>';
+    }).join('')+'</section>';
+  }
+
+  function researchPanel(d){
+    var C=d.calibration;
+    if(!C.graded)return '<div class="empty"><strong>No graded props yet.</strong>Every prop on the board is logged and graded, not just plays. This tab fills in after the first night is graded.</div>';
+    var o=C.overall;
+    return '<p class="sub">Every prop on the board, graded at the line it was captured: '+C.graded+' props, '+wl(o)+', '+units(o.units)+'. '+
+      'This is where you find out whether xEP\'s grade and V2\'s edge actually separate winners from losers.</p>'+
+      '<div class="grid2">'+
+      '<section class="card"><h3>All props by xEP grade</h3><p class="note">If the grade works, A+ should beat C−.</p>'+splitRows(C.byGrade,true)+'</section>'+
+      '<section class="card"><h3>All props by V2 edge (pts)</h3><p class="note">Edge at your book\'s price. Higher should win more often.</p>'+splitRows(C.byEdge,true)+'</section>'+
+      '<section class="card"><h3>All props, over vs under</h3><p class="note">Which direction the board gets right.</p>'+splitRows(C.byDirection,true)+'</section>'+
+      '<section class="card"><h3>How to read this</h3><p class="note" style="margin:0">One or two nights tell you nothing; a few hundred props start to. When a split holds up over weeks, it can become a rule. The provisional thresholds live in CONFIG under Provisional*.</p></section>'+
+      '</div>';
+  }
+
+  function boardRows(d){
+    var rows=d.board.rows.filter(function(r){
+      if(state.boardStat!=='ALL'&&r.stat!==state.boardStat)return false;
+      if(state.boardOnly&&!(r.decision==='PLAY'||r.decision==='LEAN'||r.decision==='WATCH'))return false;
+      if(state.q&&(r.player+' '+r.game).toLowerCase().indexOf(state.q)===-1)return false;
+      return true;});
+    var k=state.sort.k,dir=state.sort.d;
+    rows.sort(function(a,b){var x=a[k],y=b[k];if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*dir;});
+    return rows;
+  }
+  function boardPanel(d){
+    var cols=[['player','Player'],['stat','Stat'],['direction','Pick'],['line','Line'],['odds','Odds'],['book','Book'],['proj','Proj'],['edge','Edge'],['grade','Grade'],['l5','L5'],['l10avg','L10 avg'],['matchup','Matchup'],['decision','Status']];
+    var head='<tr>'+cols.map(function(c){var on=state.sort.k===c[0];return '<th data-k="'+c[0]+'" aria-sort="'+(on?(state.sort.d>0?'ascending':'descending'):'none')+'">'+c[1]+(on?(state.sort.d>0?' ▲':' ▼'):'')+'</th>';}).join('')+'</tr>';
+    var body=boardRows(d).map(function(r){
+      return '<tr><td class="pl">'+(r.teamLogo?'<img alt="" src="'+esc(r.teamLogo)+'" onerror="this.style.visibility=\'hidden\'">':'')+esc(r.player)+'</td><td>'+esc(r.stat)+'</td><td>'+esc(r.direction)+'</td>'+
+      '<td class="num">'+(r.line==null?'—':r.line)+'</td><td class="num">'+odds(r.odds)+'</td><td>'+esc(r.book)+'</td><td class="num">'+(r.proj==null?'—':r.proj)+'</td>'+
+      '<td class="num">'+pts(r.edge)+'</td><td>'+esc(r.grade)+'</td><td class="num">'+esc(r.l5)+'</td><td class="num">'+(r.l10avg==null?'—':r.l10avg)+'</td><td>'+esc(words(r.matchup))+'</td>'+
+      '<td><span class="dec '+esc(r.decision)+'" title="'+esc(r.reason)+'">'+esc(r.decision)+'</span></td></tr>';}).join('');
+    var stats=['ALL','PTS','REB','AST','3PT'];
+    return '<p class="sub">Every prop on tonight\'s board, sorted by V2 edge. '+(d.board.source==='APPROVED'?'From the published slate.':'From the working board; the slate isn\'t currently published.')+'</p>'+
+      '<div class="tools"><div class="seg" role="group" aria-label="Stat filter">'+stats.map(function(s){return '<button data-stat="'+s+'" aria-pressed="'+(state.boardStat===s)+'">'+(s==='ALL'?'All':s)+'</button>';}).join('')+'</div>'+
+      '<div class="seg"><button id="onlyBtn" aria-pressed="'+state.boardOnly+'">Plays and watch only</button></div>'+
+      '<input class="search" id="q" type="search" placeholder="Search player or game" value="'+esc(state.q)+'"></div>'+
+      '<div class="tablewrap"><table><thead>'+head+'</thead><tbody>'+(body||'<tr><td colspan="13">No props match.</td></tr>')+'</tbody></table></div>';
+  }
+
+  function render(){
+    var d=state.data, app=document.getElementById('app');
+    var R=d.rules||{};
+    var lockedN=d.tonight.filter(function(p){return p.locked;}).length, pendN=d.tonight.length-lockedN;
+    var heroSub=d.tonight.length
+      ? (lockedN+' locked'+(pendN?', '+pendN+' still able to change':'')+'. Each game locks '+(R.lockMinutes?'60–'+R.lockMinutes:'60–90')+' minutes before tip; locked plays never change and are what count.')
+      : 'No plays yet. Plays appear after the xEP paste is parsed and the next automation run publishes the slate.';
+    app.innerHTML=
+      '<header class="top"><div class="mark"><h1>NBAPropSignal<b>.</b></h1><span>'+esc(d.season)+'</span></div><div class="status">'+statusPills(d)+'</div></header>'+
+      '<div class="hero"><section><h2>Tonight\'s card</h2><p class="sub">'+esc(heroSub)+'</p>'+
+        (d.tonight.length?'<div class="plays enter">'+groupStrips(d.tonight)+'</div>'
+          :'<div class="empty"><strong>Nothing on the card yet.</strong>Paste tonight\'s xEP tables into XEP_RAW and run Parse xEP Raw. Plays show up here after the next run.</div>')+
+      '</section><div>'+bug(d)+
+        '<div class="rules"><b>How plays are picked:</b> plays can change until each game locks, '+(R.lockMinutes?'60–'+R.lockMinutes:'60–90')+' minutes before tip. V2 edge of at least '+Math.round((R.playEdge||.1)*100)+' pts for a play, '+Math.round((R.leanEdge||.06)*100)+' for a lean, at your book\'s price; odds '+odds(R.maxJuice)+' or better; xEP grade '+esc((R.grades||[]).join(', '))+'; injury report clear; up to '+R.maxPlays+' a night, one per player. Provisional until the record says otherwise.</div>'+
+      '</div></div>'+
+      '<nav class="tabs" role="tablist">'+[['record','Record'],['results','Results'],['board','Board'],['research','Is it working?']].map(function(t){
+        return '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(state.tab===t[0])+'">'+t[1]+'</button>';}).join('')+'</nav>'+
+      '<section class="panel'+(state.tab==='record'?' on':'')+'" id="p-record">'+recordPanel(d)+'</section>'+
+      '<section class="panel'+(state.tab==='results'?' on':'')+'" id="p-results">'+resultsPanel(d)+'</section>'+
+      '<section class="panel'+(state.tab==='board'?' on':'')+'" id="p-board">'+boardPanel(d)+'</section>'+
+      '<section class="panel'+(state.tab==='research'?' on':'')+'" id="p-research">'+researchPanel(d)+'</section>'+
+      '<p class="foot">'+esc(d.version)+'. Mode '+esc(d.productionMode)+'. Not betting advice; plays are provisional and tracked for evaluation.</p>';
+    wire();
+  }
+
+  function rerenderBoard(){
+    var el=document.getElementById('p-board');el.innerHTML=boardPanel(state.data);wireBoard();
+    var q=document.getElementById('q');if(q&&state.qFocus){q.focus();q.setSelectionRange(q.value.length,q.value.length);}
+  }
+  function wireBoard(){
+    document.querySelectorAll('[data-stat]').forEach(function(b){b.onclick=function(){state.boardStat=b.getAttribute('data-stat');rerenderBoard();};});
+    var ob=document.getElementById('onlyBtn');if(ob)ob.onclick=function(){state.boardOnly=!state.boardOnly;rerenderBoard();};
+    var q=document.getElementById('q');if(q)q.oninput=function(){state.q=q.value.toLowerCase();state.qFocus=true;rerenderBoard();};
+    document.querySelectorAll('#p-board th[data-k]').forEach(function(th){th.onclick=function(){var k=th.getAttribute('data-k');state.sort=state.sort.k===k?{k:k,d:-state.sort.d}:{k:k,d:(k==='player'||k==='stat'?1:-1)};state.qFocus=false;rerenderBoard();};});
+  }
+  function wire(){
+    document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){state.tab=t.getAttribute('data-tab');
+      document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x===t);});
+      document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id==='p-'+state.tab);});};});
+    var rb=document.getElementById('refreshBtn');if(rb)rb.onclick=function(){rb.textContent='Refreshing…';rb.disabled=true;load();};
+    wireBoard();
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
