@@ -16,7 +16,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --bg:#E9EDF2; --panel:#FFFFFF; --panel-2:#F4F6F9; --ink:#17202B; --ink-2:#4A5666; --ink-3:#7B8696;
@@ -190,7 +190,12 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
   function breakEven(o){o=Number(o);if(!isFinite(o)||!o)return null;return o<0?-o/(-o+100):100/(o+100);}
 
   var lastLoad=0, loading=false;
+  var SAVE_KEY='propsignal_card_v1';
+  function saveCard(d){try{localStorage.setItem(SAVE_KEY,JSON.stringify({at:Date.now(),d:d}));}catch(e){}}
+  function savedCard(){try{var x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return x&&x.d?x:null;}catch(e){return null;}}
   function fail(title, detail){
+    // If a card is already on screen, keep it and show a small notice instead.
+    if(state.data){state.notice=title;render();return;}
     document.getElementById('app').innerHTML='<div class="err"><strong>'+esc(title)+'</strong><br>'+detail+
       '<br><br><button class="refresh" onclick="location.reload()">Try again</button></div>';
   }
@@ -200,19 +205,22 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     if(!API_URL||API_URL.indexOf('/exec')===-1){
       fail("Link is missing.","Open index.html on GitHub, tap the pencil, and paste your Apps Script web app link (it ends in /exec) on line 5 between the quotes.");return;}
     if(loading)return; loading=true;
+    // Show the last saved card immediately, then refresh it in the background.
+    if(!state.data){var sc=savedCard();if(sc){state.data=sc.d;state.updating=true;render();}}
+    else{state.updating=true;var rbx=document.getElementById('refreshBtn');if(rbx){rbx.textContent='Updating…';rbx.disabled=true;}}
     fetch(API_URL+(API_URL.indexOf('?')===-1?'?':'&')+'api=card&t='+Date.now(),{cache:'no-store',redirect:'follow'})
       .then(function(r){return r.text().then(function(t){return {status:r.status,text:t};});})
       .then(function(res){
-        loading=false;
+        loading=false; state.updating=false;
         var t=(res.text||'').trim();
         if(t.charAt(0)==='<'){
           fail("Couldn't load the card: the script sent a web page instead of data.",
             "In Apps Script go to Deploy → Manage deployments → pencil. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, choose <b>New version</b>, and Deploy.");return;}
         var d; try{d=JSON.parse(t);}catch(e){fail("Couldn't load the card: the data was unreadable.","Status "+res.status+". Deploy a new version of the script and try again.");return;}
         if(!d||d.ok===false){fail("The card could not load.",esc(d&&d.message||'No data returned.'));return;}
-        lastLoad=Date.now(); state.data=d; render();
+        lastLoad=Date.now(); state.data=d; state.notice=''; saveCard(d); render();
       })
-      .catch(function(e){loading=false;
+      .catch(function(e){loading=false; state.updating=false;
         fail("Couldn't reach your script.","Check your connection. If it keeps happening, confirm the /exec link on line 5 of index.html. ("+esc(e&&e.message||e)+")");});
   }
   // Coming back to the app: refresh if the card is more than 10 minutes old.
@@ -227,8 +235,9 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     var auto=sys.automation||{};
     var out='<span class="pill" title="'+esc(d.publication&&d.publication.reason)+'"><span class="dot '+(ok?'ok':'warn')+'"></span>'+(ok?'Slate published':'Slate not current')+'</span>';
     out+='<span class="pill"><span class="dot '+(auto.healthy||auto.enabled?'ok':'warn')+'"></span>'+(auto.enabled?'Automation on':'Automation off')+'</span>';
-    out+='<span class="pill">Updated '+esc(d.refreshedAt)+'</span>';
-    out+='<button class="refresh" id="refreshBtn">Refresh</button>';
+    if(state.notice)out+='<span class="pill" style="color:var(--loss)"><span class="dot bad"></span>'+esc(state.notice)+'</span>';
+    out+='<span class="pill">'+(state.updating?'Updating… last ':'Updated ')+esc(d.refreshedAt)+'</span>';
+    out+='<button class="refresh" id="refreshBtn"'+(state.updating?' disabled':'')+'>'+(state.updating?'Updating…':'Refresh')+'</button>';
     return out;
   }
 
