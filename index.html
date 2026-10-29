@@ -98,6 +98,8 @@ body{overscroll-behavior-y:none}
 .eraseg{margin-top:10px;display:flex;width:100%}
 .eraseg button{flex:1;font-size:13px}
 .eranote{font-size:12.5px;color:var(--ink-3);margin:6px 2px 0}
+.res.blk .p{text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.blkh{font-family:var(--display);font-weight:700;font-size:19px;margin:18px 0 8px}
 .listseg button{font-size:14px;padding:7px 14px}
 .strip .who{padding:10px 14px;min-width:0}
 .strip .name{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -558,7 +560,30 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     }).join('');
   }
 
+  function resRow(p){
+    var pick=(p.direction==='Over'?'Over ':'Under ')+p.line+' '+(STAT[p.stat]||p.stat);
+    var extra=p.replay?(p.blocked?', blocked: '+esc(p.blockedBy||'rules'):(p.wasReal?', also a real play':', replay pick')):'';
+    return '<div class="res'+(p.blocked?' blk':'')+'"><span class="chip '+esc(p.outcome)+'">'+esc(p.outcome)+'</span>'+
+      '<div><div class="p">'+esc(p.player)+', '+esc(pick)+'</div><div class="d">'+esc(dayLabel(p.date))+', '+odds(p.odds)+' '+esc(p.book||'')+', edge '+pts(p.edge)+', grade '+esc(p.grade)+(p.decision==='LEAN'?', lean':'')+(p.clvLine!=null?', CLV '+(p.clvLine>0?'+':'')+p.clvLine:'')+extra+'</div></div>'+
+      '<span class="act num">'+(p.actual==null?'—':p.actual)+'</span><span class="u num '+cls(p.units)+'">'+units(p.units)+'</span></div>';
+  }
   function resultsPanel(d){
+    var E=eraObj(d);
+    if(state.era==='replay'){
+      var rp=(d.replayRecent||[]).filter(function(p){return !p.blocked&&onList(p);});
+      var bl=(d.replayRecent||[]).filter(function(p){return p.blocked;});
+      var head='<p class="sub">Replay, not real plays: what today\'s rules would have picked on past slates ('+esc(listName())+').</p>';
+      var picks=rp.length?'<section class="card">'+rp.map(resRow).join('')+'</section>':'<div class="empty"><strong>No replay picks yet.</strong>Run Daily Workflow → Replay Current Rules on Past Slates.</div>';
+      var blocked=bl.length?'<h3 class="blkh">Real plays these rules would have blocked</h3><section class="card">'+bl.map(resRow).join('')+'</section>':'';
+      return head+picks+blocked;
+    }
+    var recent=d.recent.filter(onList);
+    if(state.era==='current'&&E&&E.version)recent=recent.filter(function(p){return p.version===E.version;});
+    if(!recent.length)return '<div class="empty"><strong>'+(state.era==='current'?'No graded plays under the current rules yet.':'No graded plays yet.')+'</strong>'+
+      (state.era==='current'?'This record started when ModelVersion was last changed. Switch to All-time to see earlier plays.':'Plays are graded automatically after their games finish and player game logs arrive, usually by the next morning.')+'</div>';
+    return '<section class="card">'+recent.slice(0,40).map(resRow).join('')+'</section>';
+  }
+  function _unusedOldResults(d){
     var recent=d.recent.filter(onList);
     if(!recent.length)return '<div class="empty"><strong>No graded plays yet.</strong>Plays are graded automatically after their games finish and player game logs arrive, usually by the next morning.</div>';
     return '<section class="card">'+recent.slice(0,40).map(function(p){
