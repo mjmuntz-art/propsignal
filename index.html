@@ -110,6 +110,21 @@ body{overscroll-behavior-y:none}
 .tag.lean{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .strip.pending{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
 .strip.pending .side{background:transparent}
+.live{margin-top:10px;display:grid;gap:6px;max-width:440px}
+.live .lt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.live .badge{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.4px;padding:1px 7px;border-radius:4px;background:var(--loss);color:#fff;display:inline-flex;align-items:center;gap:5px}
+.live .badge.fin{background:var(--ink-3)}
+.live .badge i{width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block}
+@media (prefers-reduced-motion:no-preference){.live .badge i{animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{opacity:.25}}}
+.live .now{font-family:var(--display);font-weight:800;font-size:24px;line-height:1;color:var(--ink)}
+.live .now small{font-size:15px;font-weight:600;color:var(--ink-2);margin-left:3px}
+.live .need{font-weight:600}
+.live .need.good{color:var(--win)} .live .need.bad{color:var(--loss)}
+.live .meter{position:relative;height:8px;background:var(--panel-2);border-radius:4px;box-shadow:inset 0 0 0 1px var(--line)}
+.live .meter .f{position:absolute;top:0;bottom:0;left:0;border-radius:4px;background:var(--blue);transition:width .6s ease}
+.live .meter .f.good{background:var(--win)} .live .meter .f.bad{background:var(--loss)}
+.live .meter .ln{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.live .sub2{font-size:12px;color:var(--ink-3)}
 .strip.void{opacity:.62}
 .strip.void .pick{text-decoration:line-through;text-decoration-thickness:2px}
 .tag.void{background:var(--ink-3);color:var(--panel)}
@@ -232,6 +247,11 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
   function dayLabel(k){if(!k)return '';var p=k.split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
   function breakEven(o){o=Number(o);if(!isFinite(o)||!o)return null;return o<0?-o/(-o+100):100/(o+100);}
 
+  function LIVE_FETCH(g,p,cb){
+    if(!API_URL||API_URL.indexOf('/exec')===-1){cb(null);return;}
+    fetch(API_URL+(API_URL.indexOf('?')===-1?'?':'&')+'api=live&g='+encodeURIComponent(g)+'&p='+encodeURIComponent(p)+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+      .then(function(r){return r.json();}).then(cb).catch(function(){cb(null);});
+  }
   var lastLoad=0, loading=false;
   var SAVE_KEY='propsignal_card_v1';
   function saveCard(d){try{localStorage.setItem(SAVE_KEY,JSON.stringify({at:Date.now(),d:d}));}catch(e){}}
@@ -343,6 +363,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     chip('Matchup',c.matchup?words(c.matchup)+(c.matchupPct!=null?' ('+signed(c.matchupPct*100,0)+'%)':''):'');
     chip('Status',c.availability?words(c.availability)+(c.injury?' · '+c.injury:''):'');
     chip('Starter',c.starter);
+    if(c.roleUp)chips.unshift('<span style="border-color:var(--win)">Role up <b>'+esc(c.roleUp)+' out</b></span>');
     function avgBlock(label,a){
       if(!a||!a.gp)return '';
       return '<div class="avg"><div class="k">'+label+' · '+a.gp+' games</div><div class="v num">'+
@@ -361,6 +382,64 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     return head+chart(p,games)+'<div class="chips">'+chips.join('')+'</div>'+avgs+table;
   }
 
+  // ---- P24: live stat lines -------------------------------------------------
+  state.live={games:{},players:{}}; var liveAt=0, liveBusy=false;
+  function pkey(p){return p.key||p.id||(p.player+p.stat+p.direction);}
+  function liveTargets(){
+    if(!state.data)return [];
+    var now=Date.now();
+    return state.data.tonight.filter(function(p){
+      if(!p.espnGameId||!p.espnId||!p.tipIso)return false;
+      if(p.outcome&&p.outcome!=='')return false;
+      return Date.parse(p.tipIso)-now<10*60000 && now-Date.parse(p.tipIso)<5*3600000;
+    });
+  }
+  function liveHtml(p){
+    var g=state.live.games[p.espnGameId], l=state.live.players[p.espnId];
+    if(!g||g.state==='pre'||g.state==='unknown'){
+      return (p.tipIso&&Date.now()>=Date.parse(p.tipIso)&&!p.outcome)?'<div class="lt"><span class="sub2">Live stats loading…</span></div>':'';
+    }
+    var fin=g.state==='post';
+    var score=(g.away&&g.home)?esc(g.away.team)+' '+(g.away.score==null?'':g.away.score)+', '+esc(g.home.team)+' '+(g.home.score==null?'':g.home.score):'';
+    var badge='<span class="badge'+(fin?' fin':'')+'">'+(fin?'FINAL':'<i></i>LIVE · '+esc(g.detail||''))+'</span>';
+    if(!l)return '<div class="lt">'+badge+'<span class="sub2">'+score+'</span></div><div class="lt"><span class="sub2">No box-score line for him yet.</span></div>';
+    if(l.dnp)return '<div class="lt">'+badge+'<span class="sub2">'+score+'</span></div><div class="lt"><span class="need bad">Not playing'+(l.reason?' ('+esc(l.reason)+')':'')+'. Grades as no action, 0 units.</span></div>';
+    var v=l[p.stat]==null?0:l[p.stat], line=p.line, over=p.direction==='Over';
+    var need='',cls='';
+    if(line!=null){
+      if(over){ if(v>line){need=fin?'Hit (unofficial)':'Cleared the line';cls='good';}
+        else{var m=Math.floor(line)+1-v;need=fin?(v===line?'Push':'Missed (unofficial)'):'Needs '+m+' more';cls=fin?(v===line?'':'bad'):'';} }
+      else{ if(v>line){need=fin?'Missed (unofficial)':'Over the line';cls='bad';}
+        else{var cushion=Math.ceil(line)-1-v;need=fin?(v===line?'Push':'Hit (unofficial)'):(cushion<=0?'No room left':cushion+' more and it still hits');cls=fin?(v===line?'':'good'):(cushion<=1?'bad':'');} }
+    }
+    var max=Math.max(line==null?v:line*1.5,v,1), w=Math.min(100,v/max*100), lp=line==null?null:Math.min(100,line/max*100);
+    var fcls=over?(v>line?'good':''):(v>line?'bad':'good');
+    return '<div class="lt">'+badge+'<span class="sub2">'+score+'</span></div>'+
+      '<div class="lt"><span class="now num">'+v+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></span>'+(need?'<span class="need '+cls+'">'+need+'</span>':'')+
+        '<span class="sub2">'+(l.MIN!=null?l.MIN+' min':'')+(l.PF!=null&&l.PF>=4?' · '+l.PF+' fouls':'')+'</span></div>'+
+      '<div class="meter" aria-hidden="true"><div class="f '+fcls+'" style="width:'+w.toFixed(1)+'%"></div>'+(lp==null?'':'<div class="ln" style="left:'+lp.toFixed(1)+'%"></div>')+'</div>';
+  }
+  function paintLive(){
+    if(!state.data)return;
+    state.data.tonight.forEach(function(p){
+      var el=document.querySelector('.live[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');
+      if(el)el.innerHTML=liveHtml(p);
+    });
+  }
+  function pollLive(force){
+    var t=liveTargets(); if(!t.length||liveBusy)return;
+    var allFinal=t.every(function(p){var g=state.live.games[p.espnGameId];return g&&g.state==='post';});
+    var gap=allFinal?300000:30000;
+    if(!force&&Date.now()-liveAt<gap)return;
+    var g={},pl={}; t.forEach(function(p){g[p.espnGameId]=1;pl[p.espnId]=1;});
+    liveBusy=true; liveAt=Date.now();
+    LIVE_FETCH(Object.keys(g).join(','),Object.keys(pl).join(','),function(d){
+      liveBusy=false; if(d&&d.ok){state.live=d;paintLive();}
+    });
+  }
+  setInterval(function(){if(document.visibilityState==='visible')pollLive(false);},5000);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')pollLive(true);});
+
   function strip(p){
     var pending=!p.locked;
     var pick=(p.direction==='Over'?'Over ':'Under ')+(p.line==null?'—':p.line);
@@ -376,7 +455,9 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
       '<div class="pick num">'+esc(pick)+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></div>'+
       '<div class="facts num"><span>Edge <strong>'+pts(p.edge)+' pts</strong></span><span>Grade <strong>'+esc(p.grade||'—')+'</strong></span>'+
       '<span>Proj <strong>'+(p.proj==null?'—':p.proj)+'</strong></span><span>L5 <strong>'+esc(p.l5||'—')+'</strong></span>'+
-      '<span>Hit chance <strong>'+pct(p.modelP,0)+'</strong> vs '+pct(p.breakEven,0)+' needed</span></div>'+
+      '<span>Hit chance <strong>'+pct(p.modelP,0)+'</strong> vs '+pct(p.breakEven,0)+' needed</span>'+
+      (p.ctx&&p.ctx.roleUp?'<span style="color:var(--win)">Role up: <strong>'+esc(p.ctx.roleUp)+' out</strong></span>':'')+'</div>'+
+      '<div class="live" data-live="'+k+'">'+liveHtml(p)+'</div>'+
 
       '</div>'+
       '<div class="side"><span class="tag'+(isVoid?' void':(p.decision==='LEAN'?' lean':''))+'">'+(isVoid?'VOID':esc(p.decision))+'</span>'+
@@ -549,6 +630,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
   }
   function wire(){
     state.entered=true;
+    setTimeout(function(){pollLive(false);},50);
     var pl=document.getElementById('plays');
     if(pl){
       pl.onclick=function(e){if(e.target.closest('.detail'))return;var el=e.target.closest('.strip');if(el)toggleStrip(el);};
