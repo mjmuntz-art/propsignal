@@ -95,6 +95,9 @@ body{overscroll-behavior-y:none}
 .gl tr.prev td{color:var(--ink-3)}
 .gl .sep td{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.4px;padding-top:10px}
 .listseg{margin:0 0 14px}
+.eraseg{margin-top:10px;display:flex;width:100%}
+.eraseg button{flex:1;font-size:13px}
+.eranote{font-size:12.5px;color:var(--ink-3);margin:6px 2px 0}
 .listseg button{font-size:14px;padding:7px 14px}
 .strip .who{padding:10px 14px;min-width:0}
 .strip .name{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -313,7 +316,29 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     if(p.lists&&p.lists.length)return p.lists.indexOf(L)!==-1;
     return L==='ALL'||String(p.direction||'').toUpperCase()===L;
   }
-  function listRec(d){return (d.record.lists&&d.record.lists[state.list])||d.record;}
+  var ERAS=[['current','Current rules'],['all','All-time'],['replay','Replay']];
+  var ERA_KEY='propsignal_era_v1';
+  try{var savedEra=localStorage.getItem(ERA_KEY);if(savedEra&&/^(current|all|replay)$/.test(savedEra))state.era=savedEra;}catch(e){}
+  if(!state.era)state.era='current';
+  function eraObj(d){return d.record.eras&&d.record.eras[state.era];}
+  function listRec(d){
+    var E=eraObj(d);
+    if(E&&E.lists&&E.lists[state.list])return E.lists[state.list];
+    return (d.record.lists&&d.record.lists[state.list])||d.record;
+  }
+  function eraSeg(d){
+    if(!d.record.eras)return '';
+    return '<div class="seg eraseg" role="group" aria-label="Which record">'+ERAS.map(function(e){
+      return '<button data-era="'+e[0]+'" aria-pressed="'+(state.era===e[0])+'">'+e[1]+'</button>';}).join('')+'</div>';
+  }
+  function eraNote(d){
+    var E=eraObj(d); if(!E)return '';
+    if(state.era==='current')return 'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh whenever ModelVersion changes.';
+    if(state.era==='all')return 'Every real play since tracking began, under whatever rules were in force at the time.';
+    var b=E.blocked||{};
+    return 'Not real plays. Today\'s rules replayed on past slates at the lines captured when each slate was published.'+
+      (E.blockedCount?' Real plays these rules would have blocked: '+E.blockedCount+' ('+wl(b)+', '+units(b.units)+').':'');
+  }
   function listName(){for(var i=0;i<LISTS.length;i++)if(LISTS[i][0]===state.list)return LISTS[i][1];return 'All';}
   function listSeg(){
     return '<div class="seg listseg" role="group" aria-label="Which card">'+LISTS.map(function(l){
@@ -493,14 +518,14 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
   function bug(d){
     var R=listRec(d),s=R.season,l7=R.last7;
     return '<aside class="bug" aria-label="Season record">'+
-      '<div class="head"><span class="t">Season record · '+esc(listName())+'</span><span class="s">flat 1 unit per play</span></div>'+
+      '<div class="head"><span class="t">'+(state.era==='replay'?'Replay':'Season record')+' · '+esc(listName())+'</span><span class="s">flat 1 unit per play</span></div>'+
       '<div class="big num"><span class="wl">'+wl(s)+'</span><span class="u '+cls(s.units)+'">'+units(s.units)+'</span></div>'+
       '<div class="sparkwrap">'+spark(R.daily)+'</div>'+
       '<div class="row"><div class="cell"><div class="k">Hit rate</div><div class="v num">'+pct(s.hitRate)+'</div></div>'+
       '<div class="cell"><div class="k">ROI</div><div class="v num '+cls(s.roi)+'">'+(s.roi==null?'—':pct(s.roi))+'</div></div></div>'+
       '<div class="row"><div class="cell"><div class="k">Last 7 days</div><div class="v num">'+wl(l7)+'</div></div>'+
       '<div class="cell"><div class="k">Last 7 units</div><div class="v num '+cls(l7.units)+'">'+units(l7.units)+'</div></div></div>'+
-      '</aside>';
+      '</aside>'+eraSeg(d)+(eraObj(d)?'<p class="eranote">'+eraNote(d)+'</p>':'');
   }
 
   function splitRows(list,showBe){
@@ -636,6 +661,9 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
       pl.onclick=function(e){if(e.target.closest('.detail'))return;var el=e.target.closest('.strip');if(el)toggleStrip(el);};
       pl.onkeydown=function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('strip')){e.preventDefault();toggleStrip(e.target);}};
     }
+    document.querySelectorAll('[data-era]').forEach(function(b){b.onclick=function(){
+      state.era=b.getAttribute('data-era');try{localStorage.setItem(ERA_KEY,state.era);}catch(e){}
+      render();};});
     document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){
       state.list=b.getAttribute('data-list');try{localStorage.setItem(LIST_KEY,state.list);}catch(e){}
       state.open=null;render();};});
