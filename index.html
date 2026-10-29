@@ -110,6 +110,10 @@ body{overscroll-behavior-y:none}
 .tag.lean{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .strip.pending{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
 .strip.pending .side{background:transparent}
+.strip.void{opacity:.62}
+.strip.void .pick{text-decoration:line-through;text-decoration-thickness:2px}
+.tag.void{background:var(--ink-3);color:var(--panel)}
+.lock.out{color:#fff;background:var(--loss);padding:2px 8px;border-radius:4px;font-weight:700}
 .lock{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
 .lock.on{color:var(--win)} .lock.off{color:var(--warn)}
 .group{font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink-2);margin:6px 0 2px}
@@ -364,7 +368,8 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     var logo=p.teamLogo?'<img class="'+(p.headshot?'lg':'lgbig')+'" alt="'+esc(p.team)+'" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'';
     var k=esc(p.key||p.id||(p.player+p.stat+p.direction)), open=state.open===(p.key||p.id||(p.player+p.stat+p.direction));
     var wm=p.teamLogo&&p.headshot?'<img class="wm" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'';
-    return '<article class="strip'+(pending?' pending':'')+'" data-k="'+k+'" role="button" tabindex="0" aria-expanded="'+open+'" style="--team:'+esc(p.teamColor||'#334155')+'">'+
+    var isVoid=p.outcome==='VOID', outNow=!isVoid&&/^(OUT|DOUBTFUL|INACTIVE|SUSPENDED)$/.test(p.status||'');
+    return '<article class="strip'+(pending?' pending':'')+(isVoid?' void':'')+'" data-k="'+k+'" role="button" tabindex="0" aria-expanded="'+open+'" style="--team:'+esc(p.teamColor||'#334155')+'">'+
       '<div class="bar"></div><div class="face">'+wm+logo+face+'</div>'+
       '<div class="who"><div class="name">'+esc(p.player)+'</div>'+
       '<div class="meta">'+esc(p.team)+' vs '+esc(p.opp)+(p.tip?', tips '+esc(p.tip):'')+'</div>'+
@@ -374,9 +379,11 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
       '<span>Hit chance <strong>'+pct(p.modelP,0)+'</strong> vs '+pct(p.breakEven,0)+' needed</span></div>'+
 
       '</div>'+
-      '<div class="side"><span class="tag'+(p.decision==='LEAN'?' lean':'')+'">'+esc(p.decision)+'</span>'+
+      '<div class="side"><span class="tag'+(isVoid?' void':(p.decision==='LEAN'?' lean':''))+'">'+(isVoid?'VOID':esc(p.decision))+'</span>'+
       '<span class="price num">'+odds(p.odds)+'</span><span class="book">'+esc(p.book||'')+'</span>'+
-      (pending?'<span class="lock off">Can change until '+esc(p.locksAt||'lock')+'</span>':'<span class="lock on">Locked '+esc(p.lockedAt)+'</span>')+
+      (isVoid?'<span class="lock out">Ruled out after lock · void, 0 units</span>':
+        outNow?'<span class="lock out">'+esc(String(p.status).replace(/_/g,' '))+' — will void</span>':
+        pending?'<span class="lock off">Can change until '+esc(p.locksAt||'lock')+'</span>':'<span class="lock on">Locked '+esc(p.lockedAt)+'</span>')+
       '<span class="more">Player stats <i>▾</i></span></div>'+
       '<div class="detail">'+(open?detail(p):'')+'</div>'+
       '</article>';
