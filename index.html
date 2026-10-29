@@ -265,7 +265,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     document.getElementById('app').innerHTML='<div class="err"><strong>'+esc(title)+'</strong><br>'+detail+
       '<br><br><button class="refresh" onclick="location.reload()">Try again</button></div>';
   }
-  function load(){
+  function load(fresh){
     var app=document.getElementById('app');
     if(window.__CARD_SAMPLE__){state.data=window.__CARD_SAMPLE__;render();return;}
     if(!API_URL||API_URL.indexOf('/exec')===-1){
@@ -274,7 +274,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     // Show the last saved card immediately, then refresh it in the background.
     if(!state.data){var sc=savedCard();if(sc){state.data=sc.d;state.updating=true;render();}}
     else{state.updating=true;var rbx=document.getElementById('refreshBtn');if(rbx){rbx.textContent='Updating…';rbx.disabled=true;}}
-    fetch(API_URL+(API_URL.indexOf('?')===-1?'?':'&')+'api=card&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+    fetch(API_URL+(API_URL.indexOf('?')===-1?'?':'&')+'api=card'+(fresh===true?'&fresh=1':'')+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
       .then(function(r){return r.text().then(function(t){return {status:r.status,text:t};});})
       .then(function(res){
         loading=false; state.updating=false;
@@ -670,7 +670,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){state.tab=t.getAttribute('data-tab');
       document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x===t);});
       document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id==='p-'+state.tab);});};});
-    var rb=document.getElementById('refreshBtn');if(rb)rb.onclick=function(){rb.textContent='Refreshing…';rb.disabled=true;load();};
+    var rb=document.getElementById('refreshBtn');if(rb)rb.onclick=function(){rb.textContent='Refreshing…';rb.disabled=true;load(true);};
     wireBoard();
   }
 
