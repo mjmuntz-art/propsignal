@@ -550,6 +550,7 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
       '<section class="card"><h3>By V2 edge</h3><p class="note">If the edge means anything, bigger edges should win more.</p>'+splitRows(R.byEdge,true)+'</section>'+
       '<section class="card"><h3>Over vs under</h3><p class="note">Split by direction.</p>'+splitRows(R.byDirection,true)+'</section>'+
       '<section class="card"><h3>By day</h3><p class="note">Units won or lost each slate.</p>'+dailyRows(R.daily)+'</section>'+
+      clvCard(R)+
       '</div>';
   }
   function dailyRows(daily){
@@ -560,11 +561,35 @@ td img{width:18px;height:18px;vertical-align:-4px;margin-right:6px}
     }).join('');
   }
 
+  function clvPart(l,pr){
+    var bits=[];
+    if(l!=null&&l!==0)bits.push(signed(l,1));
+    if(pr!=null)bits.push(signed(pr*100,1)+'%');
+    if(!bits.length&&l===0)bits.push('even');
+    return bits.join(' / ');
+  }
+  function clvText(p){
+    var m=clvPart(p.clvLine,p.clvPrice), k=clvPart(p.clvLockLine,p.clvLockPrice);
+    if(!m&&!k)return '';
+    return ', CLV'+(m?' morning '+m:'')+(k?(m?',':'')+' lock '+k:'');
+  }
+  function clvCard(R){
+    var C=R&&R.clv; if(!C)return '';
+    function row(label,x){
+      if(!x||!x.n)return '<div class="split"><span class="lab">'+label+'</span><span class="r" style="text-align:left">No closing lines yet</span><span></span><span></span></div>';
+      return '<div class="split"><span class="lab">'+label+'</span>'+
+        '<span class="r num" style="text-align:left">Beat the close <strong>'+(x.beatRate==null?'—':Math.round(x.beatRate*100)+'%')+'</strong></span>'+
+        '<span class="r num '+cls(x.avgLine)+'">'+(x.avgLine==null?'—':signed(x.avgLine,2))+'</span>'+
+        '<span class="r num '+cls(x.avgPrice)+'">'+(x.avgPrice==null?'—':signed(x.avgPrice*100,1)+'%')+'</span></div>';
+    }
+    return '<section class="card"><h3>Closing line value</h3><p class="note">Did the line move our way by tip? Morning = first captured line vs the same book\'s close. Lock = the line we locked vs the market close. Columns: share that beat the close, average line gain, average price gain.</p>'+
+      row('Morning',C.morning)+row('Lock',C.lock)+'</section>';
+  }
   function resRow(p){
     var pick=(p.direction==='Over'?'Over ':'Under ')+p.line+' '+(STAT[p.stat]||p.stat);
     var extra=p.replay?(p.blocked?', blocked: '+esc(p.blockedBy||'rules'):(p.wasReal?', also a real play':', replay pick')):'';
     return '<div class="res'+(p.blocked?' blk':'')+'"><span class="chip '+esc(p.outcome)+'">'+esc(p.outcome)+'</span>'+
-      '<div><div class="p">'+esc(p.player)+', '+esc(pick)+'</div><div class="d">'+esc(dayLabel(p.date))+', '+odds(p.odds)+' '+esc(p.book||'')+', edge '+pts(p.edge)+', grade '+esc(p.grade)+(p.decision==='LEAN'?', lean':'')+(p.clvLine!=null?', CLV '+(p.clvLine>0?'+':'')+p.clvLine:'')+extra+'</div></div>'+
+      '<div><div class="p">'+esc(p.player)+', '+esc(pick)+'</div><div class="d">'+esc(dayLabel(p.date))+', '+odds(p.odds)+' '+esc(p.book||'')+', edge '+pts(p.edge)+', grade '+esc(p.grade)+(p.decision==='LEAN'?', lean':'')+clvText(p)+extra+'</div></div>'+
       '<span class="act num">'+(p.actual==null?'—':p.actual)+'</span><span class="u num '+cls(p.units)+'">'+units(p.units)+'</span></div>';
   }
   function resultsPanel(d){
