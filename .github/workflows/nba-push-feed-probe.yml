@@ -1,0 +1,20 @@
+name: NBA PropSignal - Read-only JSON Feed Probe
+
+# Manual only: no schedule, no OneSignal credentials, no notifications, no writes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out NBA PropSignal website
+        uses: actions/checkout@v4
+      - name: Test event detector with synthetic data
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Check existing Google Apps Script JSON feed
+        run: python3 .github/scripts/nba_push_probe.py
