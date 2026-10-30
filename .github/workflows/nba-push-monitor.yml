@@ -1,0 +1,62 @@
+name: NBA PropSignal - Automatic Push Monitor
+
+# Checks the public feed every 30 minutes.
+# Sends no notifications unless repository variable NBA_PUSH_SEND_ENABLED == true.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '19,49 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nba-propsignal-push-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      NBA_PUSH_SEND_ENABLED: ${{ vars.NBA_PUSH_SEND_ENABLED }}
+      ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
+    steps:
+      - name: Checkout monitor code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Run offline event tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_nba_push_monitor.py' -v
+      - name: Read previous compact state
+        shell: bash
+        run: |
+          git fetch origin nba-push-checkpoints:refs/remotes/origin/nba-push-checkpoints 2>/dev/null || true
+          if git show refs/remotes/origin/nba-push-checkpoints:.github/nba-push-state.json > /tmp/previous-nba-push.json 2>/dev/null; then
+            echo "Previous checkpoint loaded"
+          else
+            rm -f /tmp/previous-nba-push.json
+            echo "No previous checkpoint: first run establishes a silent baseline"
+          fi
+      - name: Fetch feed, compare state, optionally send notifications
+        run: python3 .github/scripts/nba_push_monitor.py --old /tmp/previous-nba-push.json --new /tmp/new-nba-push.json
+      - name: Persist checkpoint in a separate state branch
+        shell: bash
+        run: |
+          if git show-ref --verify --quiet refs/remotes/origin/nba-push-checkpoints; then
+            git switch -C nba-push-checkpoints refs/remotes/origin/nba-push-checkpoints
+          else
+            git switch --orphan nba-push-checkpoints
+            git rm -rf --cached . >/dev/null 2>&1 || true
+            rm -rf .github
+          fi
+          mkdir -p .github
+          cp /tmp/new-nba-push.json .github/nba-push-state.json
+          git add .github/nba-push-state.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Update NBA push notification checkpoint'
+            git push origin HEAD:refs/heads/nba-push-checkpoints
+          else
+            echo "Checkpoint unchanged"
+          fi
