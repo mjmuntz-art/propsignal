@@ -13,8 +13,8 @@ This branch prepares **NBA PropSignal** for OneSignal Web Push without changing 
 
 ## OneSignal steps
 1. Create a OneSignal **Web** app, integration **Custom Code**. Use the origin `https://mjmuntz-art.github.io`. With four apps on the same origin, plan to **use one OneSignal App ID** for all four, testing behavior on each installed Home Screen app before enabling automated sends.
-2. Copy its public **App ID** into `push-config.js` (never put the REST API key in GitHub).
-3. Merge and publish this branch after review. Open the app **from its iPhone Home Screen icon**, tap **Alerts**, tap **Enable notifications**, and approve the native iOS prompt.
+2. The public **App ID** `4174a3fe-47af-44be-a68f-257caad1e247` and Safari Web ID are already entered in `push-config.js`. Never put the REST API key in GitHub.
+3. Before merging, check whether OneSignal supports four independent iOS Home Screen subscriptions with separate service-worker scopes on this shared origin. Then merge and publish this branch after review. Open the app **from its iPhone Home Screen icon**, tap **Alerts**, tap **Enable notifications**, and approve the native iOS prompt.
 4. Test one manually targeted push message. Configure automatic backend triggers only after that succeeds.
 
 ## Tag filters used by the Apps Script sender
