@@ -97,6 +97,11 @@ def current_checkpoint(card, old):
             base["results"][stable_key(p)] = stable_hash({
                 "outcome": result, "actual": p.get("actual"), "units": p.get("units")
             })
+    # A temporary non-current publication must not erase the last approved
+    # selections and later create false new-selection notifications.
+    if old and base["publication"] != "APPROVED_CURRENT" and old.get("date") == base["date"]:
+        base["projections"] = dict(old.get("projections", {}))
+        base["locked"] = dict(old.get("locked", {}))
     # Bounded state: retain up to 1000 graded plays by insertion order.
     base["results"] = dict(list(base["results"].items())[-1000:])
     return base
