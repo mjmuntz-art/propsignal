@@ -135,7 +135,8 @@ def send_alert(category, count, prior_sequence, current):
         "results": f"{count} new play result(s) available.",
     }[category]
     fingerprint = stable_hash([current["date"],category,count,current["projections"] if category == "projections" else current[category]])
-    idem = str(uuid.uuid5(uuid.NAMESPACE_URL, f"propsignal:{prior_sequence}:{category}:{fingerprint}"))
+    seed = hashlib.sha256(f"propsignal:{prior_sequence}:{category}:{fingerprint}".encode("utf-8")).digest()
+    idem = str(uuid.UUID(bytes=seed[:16], version=4))  # Stable UUIDv4 format for OneSignal retries.
     payload = {
         "app_id": APP_ID,
         "target_channel": "push",
