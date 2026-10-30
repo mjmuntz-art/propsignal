@@ -1,11 +1,17 @@
 name: NBA PropSignal - Automatic Push Monitor
 
-# Checks the public feed every 30 minutes.
+# Checks the public feed every 10 minutes; also checks immediately after monitor code updates.
 # Sends no notifications unless repository variable NBA_PUSH_SEND_ENABLED == true.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nba-push-monitor.yml'
+      - '.github/scripts/nba_push_monitor.py'
+      - '.github/scripts/nba_push_probe.py'
   schedule:
-    - cron: '19,49 * * * *'
+    - cron: '7,17,27,37,47,57 * * * *'
 
 permissions:
   contents: write
