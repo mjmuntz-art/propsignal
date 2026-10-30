@@ -1,0 +1,31 @@
+name: NBA PropSignal - Lock Diagnostics (read only)
+on:
+  push:
+    branches: [diagnose-lock-notifications-20261030]
+    paths: ['.github/workflows/nba-lock-diagnostics.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public feed lock fields
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, collections
+          url="https://script.google.com/macros/s/AKfycbyhKmpJu5AC_R8jhscBojGDAPzQAAt7Z4lPLdMpQea43HzxIS5dfuX65Rct009iIymk/exec?api=card"
+          with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent':'NBA-PropSignal-ReadOnly-Lock-Diagnostics/1.0'}),timeout=75) as response:
+              raw=response.read(3000000)
+          card=json.loads(raw)
+          plays=card.get('tonight',[])
+          print('LIVE_SUMMARY',json.dumps({'today':card.get('today'),'publication':card.get('publication'),'top_keys':list(card.keys()),'tonight_count':len(plays),'recent_count':len(card.get('recent',[]))},default=str)[:2500])
+          print('TONIGHT_FIELDS',json.dumps(sorted(set().union(*(p.keys() for p in plays if isinstance(p,dict))))))
+          for p in plays[:4]:
+              print('PLAY',json.dumps({k:p.get(k) for k in ('player','decision','locked','lock','status','grade','lists','publication','published','is_locked','isLocked','reason','key') if k in p},default=str)[:1000])
+          for k in ('decision','locked','lock','status','grade','is_locked','isLocked'):
+              print('FIELD_COUNTS',k,json.dumps(dict(collections.Counter(str(p.get(k,'<absent>')) for p in plays if isinstance(p,dict)))))
+          PY
