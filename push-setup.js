@@ -119,6 +119,7 @@
       var scope = new URL("./", location.href).pathname;
       await OneSignal.init({
         appId: config.oneSignalAppId,
+        safari_web_id: config.safariWebId,
         serviceWorkerPath: scope + "OneSignalSDKWorker.js",
         serviceWorkerParam: { scope: scope },
         notifyButton: { enable: false },
