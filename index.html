@@ -302,6 +302,19 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .pr .sub{font-size:12px;color:var(--ink3)}
 .pr .wl2{font-family:var(--disp);font-weight:800;font-size:24px;text-align:right;line-height:1}
 .pr .u2{font-size:13px;font-weight:600;text-align:right}
+.pr{cursor:pointer}
+.pr .chev{font-size:12px;color:var(--ink3);transition:transform .15s;display:inline-block;margin-left:4px}
+.pwrap[data-open="true"] .pr{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.pwrap[data-open="true"] .chev{transform:rotate(180deg)}
+.plog{display:none;background:var(--panel2);border:1px solid var(--line);border-top:0;border-left:4px solid var(--tc);border-radius:0 0 12px 12px;padding:4px 14px 10px}
+.pwrap[data-open="true"] .plog{display:block}
+.plog .pl{display:grid;grid-template-columns:62px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.plog .pl:first-child{border-top:0}
+.plog .pl .dt{color:var(--ink3);font-size:12px}
+.plog .pl .pk{font-weight:600}.plog .pl .ds{font-size:12px;color:var(--ink3)}
+.plog .pl .act{font-family:var(--disp);font-weight:700;font-size:16px;text-align:right}
+.plog .pl .oc{font-size:11px;padding:2px 7px}
+.plog .sum{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px}
 .dots{display:flex;gap:4px;margin-top:5px}
 .dots i{width:9px;height:9px;border-radius:50%;background:var(--dim);display:inline-block}
 .dots i.HIT{background:var(--mint)}.dots i.MISS{background:var(--neg)}.dots i.PUSH{background:var(--amber)}
@@ -354,7 +367,7 @@ var API = (function(){
   var ERAS=[['current','Current rules'],['all','All-time'],['replay','Replay']];
   var state={data:null,view:'tonight',list:'ALL',era:'current',date:null,days:{},open:null,live:{games:{},players:{}},boardStat:'ALL',boardOnly:false,q:'',pq:'',sort:{k:'edge',d:-1},updating:false,entered:false,month:null,calOpen:false};
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
-  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';})();
+  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
 
   // ---- formatting ----------------------------------------------------------
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -588,7 +601,7 @@ var API = (function(){
   // P34: month calendar, each day shaded by units won or lost.
   function monthView(d){
     var days=d.days||[];if(!days.length)return '';
-    var by={};days.forEach(function(x){by[x.date]=x.lists[state.list]||{w:0,l:0,units:0,plays:0};});
+    var by={};days.forEach(function(x){by[x.date]=x.lists[state.every?'EVERY':state.list]||{w:0,l:0,units:0,plays:0};});
     var first=days[days.length-1].date.slice(0,7),last=days[0].date.slice(0,7);
     var m=state.month||(state.date||days[0].date).slice(0,7);if(m<first)m=first;if(m>last)m=last;state.month=m;
     var y=+m.slice(0,4),mo=+m.slice(5,7)-1,start=new Date(y,mo,1),n=new Date(y,mo+1,0).getDate(),lead=start.getDay();
@@ -611,27 +624,28 @@ var API = (function(){
     var days=d.days||[];
     if(!d.days&&d.recent&&d.recent.length){var by={};d.recent.forEach(function(p){(by[p.date]=by[p.date]||[]).push(p);});
       days=Object.keys(by).sort().reverse().map(function(k){var o={date:k,lists:{}};['ALL','OVER','UNDER'].forEach(function(L){var sub=by[k].filter(function(p){return (p.lists||[]).indexOf(L)!==-1;}),r={w:0,l:0,p:0,units:0,plays:sub.length};
-        sub.forEach(function(p){if(p.outcome==='HIT')r.w++;else if(p.outcome==='MISS')r.l++;else if(p.outcome==='PUSH')r.p++;r.units+=p.units||0;});r.units=Math.round(r.units*100)/100;o.lists[L]=r;});return o;});
+        sub.forEach(function(p){if(p.outcome==='HIT')r.w++;else if(p.outcome==='MISS')r.l++;else if(p.outcome==='PUSH')r.p++;r.units+=p.units||0;});r.units=Math.round(r.units*100)/100;o.lists[L]=r;});
+        var e={w:0,l:0,p:0,units:0,plays:by[k].length};by[k].forEach(function(p){if(p.outcome==='HIT')e.w++;else if(p.outcome==='MISS')e.l++;else if(p.outcome==='PUSH')e.p++;e.units+=p.units||0;});e.units=Math.round(e.units*100)/100;o.lists.EVERY=e;return o;});
       d.days=days;d.recentSince=days.length?days[days.length-1].date:'';}
     if(!state.date||(!days.some(function(x){return x.date===state.date;})&&!state.days[state.date]))state.date=days.length?days[0].date:null;
     var rail=days.slice(0,30).map(function(x){
-      var r=x.lists[state.list]||{w:0,l:0,units:0},cl=r.units>0?'up':r.units<0?'down':'flat';
+      var r=x.lists[state.every?'EVERY':state.list]||{w:0,l:0,units:0},cl=r.units>0?'up':r.units<0?'down':'flat';
       var p=x.date.split('-'),dt=new Date(+p[0],+p[1]-1,+p[2]);
       return '<button class="day '+cl+'" data-date="'+x.date+'" aria-pressed="'+(state.date===x.date)+'"><div class="dw">'+dt.toLocaleDateString(undefined,{weekday:'short'})+'</div><div class="dd n">'+dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</div><div class="dr n">'+(r.plays?wl(r):'—')+'</div></button>';
     }).join('');
-    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('list',LISTS,state.list,true)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top 5'],['OVER','Top overs'],['UNDER','Top unders'],['EVERY','Every play']],state.every?'EVERY':state.list,true)+'</div></div>'+
       (days.length?'<div class="rail" id="rail">'+rail+'</div>':'')+monthView(d)+
       '<div class="bar"><label class="pickdate">Jump to a date <input type="date" id="pickdate" value="'+esc(state.date||'')+'" max="'+esc(d.today||'')+'"></label></div>';
     if(!state.date)return h+'<div class="empty"><b>No graded plays yet.</b>Plays are graded automatically after their games finish, usually by the next morning.</div>';
     var data=null;dayData(state.date,function(x){if(x)data=x;});
     if(!data)return h+'<div class="loading">Loading '+esc(dayLabel(state.date))+'…</div>';
-    var plays=data.plays.filter(onList),graded=plays.filter(function(p){return ['HIT','MISS','PUSH','DNP','VOID'].indexOf(p.outcome)!==-1;});
+    var plays=data.plays.filter(function(p){return state.every||onList(p);}),graded=plays.filter(function(p){return ['HIT','MISS','PUSH','DNP','VOID'].indexOf(p.outcome)!==-1;});
     var w=graded.filter(function(p){return p.outcome==='HIT';}).length,l=graded.filter(function(p){return p.outcome==='MISS';}).length,u=0;graded.forEach(function(p){u+=p.units||0;});
-    var cooled=(data.cooled||[]).filter(function(x){return state.list==='ALL'||!x.firstLists||!x.firstLists.length||x.firstLists.indexOf(state.list)!==-1;});
-    var morning=(data.replay||[]).filter(function(r){return !r.blocked&&onList(r);}),blocked=(data.replay||[]).filter(function(r){return r.blocked;});
+    var cooled=(data.cooled||[]).filter(function(x){return state.every||state.list==='ALL'||!x.firstLists||!x.firstLists.length||x.firstLists.indexOf(state.list)!==-1;});
+    var morning=(data.replay||[]).filter(function(r){return !r.blocked&&(state.every||onList(r));}),blocked=(data.replay||[]).filter(function(r){return r.blocked;});
     var cw=cooled.filter(function(x){return x.outcome==='HIT';}).length,cl2=cooled.filter(function(x){return x.outcome==='MISS';}).length,cu=0;cooled.forEach(function(x){cu+=x.units||0;});
     var mw=morning.filter(function(x){return x.outcome==='HIT';}).length,ml=morning.filter(function(x){return x.outcome==='MISS';}).length,mu=0;morning.forEach(function(x){mu+=x.units||0;});
-    h+='<div class="sb"><div class="c1"><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(listName())+'</div><div class="v n">'+w+'–'+l+' <span class="'+cls(u)+'">'+units(Math.round(u*100)/100)+'</span></div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+(w+l?' · '+Math.round(w/(w+l)*100)+'% hit':'')+'</div></div>'+
+    h+='<div class="sb"><div class="c1"><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(state.every?'Every locked play':listName())+'</div><div class="v n">'+w+'–'+l+' <span class="'+cls(u)+'">'+units(Math.round(u*100)/100)+'</span></div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+(w+l?' · '+Math.round(w/(w+l)*100)+'% hit':'')+'</div></div>'+
       '<div><div class="k">Model cooled</div><div class="v n">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
       '<div><div class="k">Morning card</div><div class="v n">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?units(Math.round(mu*100)/100)+' · replay':'not replayed yet')+'</div></div>'+
       '</div>';
@@ -644,17 +658,29 @@ var API = (function(){
 
   // ---- players -------------------------------------------------------------
   function viewPlayers(d){
-    var E=(d.record.eras||{})[state.era==='replay'?'all':state.era]||{},P=(E.players||[]).filter(function(p){return state.list==='ALL'||p.lists[state.list];});
+    var era=state.pera||'all';
+    var E=(d.record.eras||{})[era]||{},P=(E.players||[]).filter(function(p){return state.list==='ALL'||p.lists[state.list];});
     if(state.pq)P=P.filter(function(p){return (p.player+' '+p.team).toLowerCase().indexOf(state.pq)!==-1;});
-    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',LISTS,state.list,true)+seg('era',ERAS.slice(0,2),state.era==='replay'?'all':state.era)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders']],state.list,true)+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
       '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"></div>';
-    if(!P.length)return h+'<div class="empty"><b>No players yet for this view.</b>Each player who makes a locked card gets a running record here.</div>';
-    return h+'<div class="plist">'+P.map(function(p){
+    if(!P.length)return h+'<div class="empty"><b>No players yet for this view.</b>'+(era==='current'?'Current rules only counts plays since the last ModelVersion change. Switch to All-time to see everyone.':'Each player who makes a locked card gets a running record here.')+'</div>';
+    return h+'<p class="note2" style="margin:-4px 2px 10px">Tap a player to see every play.</p><div class="plist">'+P.map(function(p){
       var r=state.list==='ALL'?p.record:(p.lists[state.list]||p.record);
-      var dots=(p.last||[]).slice().reverse().map(function(x){return '<i class="'+esc(x.outcome)+'" title="'+esc(dayLabel(x.date)+': '+pickTxt(x.direction,x.line,x.stat)+' '+(x.outcome||'')+(x.actual!=null?' ('+x.actual+')':''))+'"></i>';}).join('');
-      return '<div class="pr" style="--tc:'+esc(p.teamColor)+'"><div class="av">'+face(p,'h','l')+'</div>'+
-        '<div><div class="nm">'+esc(p.player)+'</div><div class="sub">'+esc(p.team)+' · '+r.plays+' play'+(r.plays===1?'':'s')+(r.hitRate!=null?' · '+Math.round(r.hitRate*100)+'% hit':'')+' · '+esc((p.stats||[]).slice(0,3).map(function(s){return s.k;}).join(', '))+'</div><div class="dots">'+dots+'</div></div>'+
-        '<div><div class="wl2 n">'+wl(r)+'</div><div class="u2 n '+cls(r.units)+'">'+units(r.units)+'</div></div></div>';
+      var mine=(p.last||[]).filter(function(x){return state.list==='ALL'||(x.lists||[]).indexOf(state.list)!==-1;});
+      var dots=mine.slice(0,10).reverse().map(function(x){return '<i class="'+esc(x.outcome)+'"></i>';}).join('');
+      var open=state.popen===p.playerId;
+      var stats={};mine.forEach(function(x){var k=(STAT[x.stat]||x.stat)+' '+(x.direction==='Over'?'overs':'unders');var o=stats[k]=stats[k]||{w:0,l:0};if(x.outcome==='HIT')o.w++;else if(x.outcome==='MISS')o.l++;});
+      var log='<div class="plog">'+(Object.keys(stats).length>1?'<div class="sum">'+Object.keys(stats).map(function(k){return '<span class="flag">'+esc(k)+' <b>'+stats[k].w+'–'+stats[k].l+'</b></span>';}).join('')+'</div>':'')+
+        mine.map(function(x){
+          var lt=(x.lists||[]).map(function(l){return l==='ALL'?'Top 5':l==='OVER'?'Overs':'Unders';}).join(' · ');
+          return '<div class="pl"><span class="dt">'+esc(dayLabel(x.date,{month:'short',day:'numeric'}))+'</span>'+
+            '<div><div class="pk">'+esc(pickTxt(x.direction,x.line,x.stat))+(x.opp?' <span class="ds">vs '+esc(x.opp)+'</span>':'')+'</div><div class="ds">'+(x.odds!=null?odds(x.odds)+' '+esc(x.book||'')+' · ':'')+(x.edge!=null?'edge '+pts(x.edge)+' · ':'')+(x.grade?esc(x.grade)+' · ':'')+esc(lt)+'</div></div>'+
+            '<span class="act n">'+(x.actual==null?'—':x.actual)+'</span>'+
+            '<span style="text-align:right"><span class="oc '+esc(x.outcome||'OPEN')+'">'+esc(x.outcome||'OPEN')+'</span><div class="ds n '+cls(x.units)+'" style="margin-top:2px">'+(x.units==null?'':units(x.units))+'</div></span></div>';
+        }).join('')+'</div>';
+      return '<div class="pwrap" data-open="'+open+'" style="--tc:'+esc(p.teamColor)+'"><div class="pr" data-pid="'+esc(p.playerId)+'" role="button" tabindex="0" aria-expanded="'+open+'"><div class="av">'+face(p,'h','l')+'</div>'+
+        '<div><div class="nm">'+esc(p.player)+' <span class="chev">▾</span></div><div class="sub">'+esc(p.team)+' · '+r.plays+' play'+(r.plays===1?'':'s')+(r.hitRate!=null?' · '+Math.round(r.hitRate*100)+'% hit':'')+'</div><div class="dots">'+dots+'</div></div>'+
+        '<div><div class="wl2 n">'+wl(r)+'</div><div class="u2 n '+cls(r.units)+'">'+units(r.units)+'</div></div></div>'+log+'</div>';
     }).join('')+'</div>';
   }
 
@@ -783,6 +809,9 @@ var API = (function(){
   function wire(){
     document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.getAttribute('data-go'));};});
     document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){state.list=b.getAttribute('data-list');ls('ps_list',state.list);state.open=null;render();};});
+    document.querySelectorAll('[data-rlist]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-rlist');if(v==='EVERY'){state.every=true;}else{state.every=false;state.list=v;ls('ps_list',v);}ls('ps_every',state.every?'1':'');render();};});
+    document.querySelectorAll('[data-pera]').forEach(function(b){b.onclick=function(){state.pera=b.getAttribute('data-pera');ls('ps_pera',state.pera);render();};});
+    document.querySelectorAll('[data-pid]').forEach(function(el){var t=function(){var id=el.getAttribute('data-pid');state.popen=state.popen===id?null:id;var w=el.parentNode,o=state.popen===id;document.querySelectorAll('.pwrap[data-open="true"]').forEach(function(x){if(x!==w){x.setAttribute('data-open','false');x.firstChild.setAttribute('aria-expanded','false');}});w.setAttribute('data-open',o);el.setAttribute('aria-expanded',o);};el.onclick=t;el.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}};});
     document.querySelectorAll('[data-era]').forEach(function(b){b.onclick=function(){state.era=b.getAttribute('data-era');ls('ps_era',state.era);render();};});
     document.querySelectorAll('[data-date]').forEach(function(b){b.onclick=function(){state.date=b.getAttribute('data-date');render();};});
     var pd=document.getElementById('pickdate');if(pd)pd.onchange=function(){if(pd.value){state.date=pd.value;state.month=pd.value.slice(0,7);render();}};
