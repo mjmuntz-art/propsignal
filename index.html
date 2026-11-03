@@ -387,7 +387,9 @@ var API = (function(){
     API.card(fresh===true,function(d){
       setUpdating(false);
       if(!d||d.ok===false){fail('The card could not load.',esc(d&&d.message||'No data returned.'));return;}
-      state.data=d;state.loadedAt=Date.now();try{ls('ps_card_v2',JSON.stringify({at:Date.now(),d:d}));}catch(e){}
+      // P34.1: a card built by older code lacks the fields this board needs; rebuild it once.
+      if(!d.days&&!fresh&&!state.rebuilt){state.rebuilt=true;state.notice='Updating to the new board… this can take a minute.';if(!state.data){state.data=d;render();}else renderStatus();load(true);return;}
+      state.notice='';state.data=d;state.loadedAt=Date.now();try{ls('ps_card_v2',JSON.stringify({at:Date.now(),d:d}));}catch(e){}
       render();
     },function(title,detail){setUpdating(false);fail(title,detail);});
   }
@@ -607,6 +609,10 @@ var API = (function(){
   }
   function viewResults(d){
     var days=d.days||[];
+    if(!d.days&&d.recent&&d.recent.length){var by={};d.recent.forEach(function(p){(by[p.date]=by[p.date]||[]).push(p);});
+      days=Object.keys(by).sort().reverse().map(function(k){var o={date:k,lists:{}};['ALL','OVER','UNDER'].forEach(function(L){var sub=by[k].filter(function(p){return (p.lists||[]).indexOf(L)!==-1;}),r={w:0,l:0,p:0,units:0,plays:sub.length};
+        sub.forEach(function(p){if(p.outcome==='HIT')r.w++;else if(p.outcome==='MISS')r.l++;else if(p.outcome==='PUSH')r.p++;r.units+=p.units||0;});r.units=Math.round(r.units*100)/100;o.lists[L]=r;});return o;});
+      d.days=days;d.recentSince=days.length?days[days.length-1].date:'';}
     if(!state.date||(!days.some(function(x){return x.date===state.date;})&&!state.days[state.date]))state.date=days.length?days[0].date:null;
     var rail=days.slice(0,30).map(function(x){
       var r=x.lists[state.list]||{w:0,l:0,units:0},cl=r.units>0?'up':r.units<0?'down':'flat';
