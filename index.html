@@ -698,6 +698,20 @@ var API = (function(){
       (c.examples||[]).slice(0,4).map(function(x){return '<div class="mini"><span>'+esc(x.player)+' · '+esc(pickTxt(x.direction,x.line,x.stat))+'</span><span class="dim n">'+x.actual+' · '+esc(dayLabel(x.date,{month:'short',day:'numeric'}))+'</span></div>';}).join('')+'</div>';
     return '<section class="sec"><div class="sech"><h2>Luck or the model?</h2><span>'+dec+' decided plays</span></div><div class="g3">'+luck+streak+close+'</div></section>';
   }
+  // P36: shadow ranking — same pool of qualifying props, two ways to rank.
+  function shadowBlock(S){
+    var head='<section class="sec"><div class="sech"><h2>Shadow ranking</h2><span>Test only · the real card is unchanged</span></div>';
+    var expl='<p class="note">Every prop that qualified at lock, ranked two ways. <b>Current</b>: plays before leans, then the biggest edge. <b>Shadow</b>: edges count up to 20 pts, with a small bonus for better prices, so a huge edge no longer jumps to #1 on its own.</p>';
+    if(!S||S.error||!S.lists||!S.days)return head+'<div class="card">'+expl+'<p class="note2">Starts filling after the first slate that locks with this update. Both cards are graded the next morning.</p></div></section>';
+    var x=S.lists[state.list]||{},a=x.current||{},b=x.shadow||{},diff=(b.units||0)-(a.units||0);
+    var row=function(lab,r,cl){return '<div class="kv"><span>'+lab+'</span><b class="n">'+wl(r)+' <span class="'+cls(r.units)+'" style="font-size:15px">'+units(r.units)+'</span></b></div>';};
+    var verdict=!((a.w||0)+(a.l||0))?'Nothing graded yet.':Math.abs(diff)<0.5?'About even so far.':diff>0?'<b class="pos">Shadow ahead by '+diff.toFixed(2)+'u</b>':'<b class="neg">Current ahead by '+Math.abs(diff).toFixed(2)+'u</b>';
+    var R=(S.recent||[]).filter(function(r){return r.list===state.list;}).slice(0,8);
+    var diffs=R.length?R.map(function(r){return '<div class="mini"><span><span class="dim" style="display:inline-block;min-width:58px">'+(r.side==='shadow'?'Shadow':'Current')+' only</span> '+esc(r.player)+' · '+esc(pickTxt(r.direction,r.line,r.stat))+' <span class="dim">'+odds(r.odds)+' · edge '+pts(r.edge)+' · '+esc(dayLabel(r.date,{month:'short',day:'numeric'}))+'</span></span><span>'+(r.outcome?'<span class="oc '+esc(r.outcome)+'">'+esc(r.outcome)+'</span>':'')+'</span></div>';}).join(''):'<p class="note2">The two rankings picked the same plays so far.</p>';
+    return head+'<div class="g2"><div class="card"><h3>'+esc(listName())+' · '+(x.days||0)+' day'+(x.days===1?'':'s')+'</h3>'+expl+row('Current ranking',a)+row('Shadow ranking',b)+
+      '<p class="note" style="margin:8px 0 0">'+verdict+' '+(x.same||0)+' of '+(x.picks||0)+' shadow picks were also on the current card.</p></div>'+
+      '<div class="card"><h3>Where they differ</h3><p class="note">Plays only one ranking picked. This is where the shadow wins or loses.</p>'+diffs+'</div></div></section>';
+  }
   // P34: guard tracker (props held off the card only by a context guard).
   function guardBlock(G){
     if(!G||G.error||!G.all)return '';
@@ -733,6 +747,7 @@ var API = (function(){
         '<div class="card"><h3>Edge record</h3><p class="note">Bigger edges should win more if the edge means anything. The blue tick is the hit rate the model expected for that band.</p>'+legend(true)+splitRows(R.byEdge,true)+'</div></div></section>';}
     h+='<section class="sec"><div class="g2"><div class="card"><h3>By rank on the card</h3><p class="note">Do the #1–#2 plays carry the card, or do #4–#5 hold their own? If the bottom of the card loses, a shorter card is better.</p>'+splitRows(X.byRank,true)+'</div>'+
       '<div class="card"><h3>By price</h3><p class="note">Plays are allowed down to −130. If the −116 to −130 band loses, tighten the price limit.</p>'+splitRows(X.byOdds,true)+'</div></div></section>';
+    h+=shadowBlock(d.shadow);
     h+=guardBlock(d.guards);
     h+='<section class="sec"><div class="g2"><div class="card"><h3>Over vs under</h3>'+legend(true)+splitRows(R.byDirection,true)+'</div><div class="card"><h3>By stat</h3><p class="note">Which markets are winning.</p>'+splitRows(R.byStat,true)+'</div>'+
       '<div class="card"><h3>By xEP grade</h3><p class="note">Plays only come from A+, A and A−.</p>'+splitRows(R.byGrade,true)+'</div><div class="card"><h3>Play vs lean</h3><p class="note">Plays need 10+ pts of edge, leans 6+.</p>'+splitRows(R.byDecision,true)+'</div></div></section>';
