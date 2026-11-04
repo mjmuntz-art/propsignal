@@ -166,16 +166,17 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .pa-st .v small{font-size:14px}
 .pa-st .s{font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc .pc-body>.flags:first-child{margin-top:0}
-.pa-col .wm{opacity:.16;filter:brightness(0) invert(1)}
+.pa-col .wm{opacity:.42;filter:drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 0 1px rgba(255,255,255,.6))}
 /* P40: logo badge (always readable) + shared team column */
-.lchip{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#F4F6F9;box-shadow:0 0 0 2px var(--tc2,#fff),0 2px 8px rgba(0,0,0,.4);flex:0 0 auto}
-.lchip img{width:76%;height:76%;object-fit:contain}
-.lchip.pa{position:absolute;right:12px;top:10px;width:46px;height:46px}
+.lchip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+/* P40.1: real logo colors, no badge; a thin white outline + soft glow keeps dark logos readable */
+.lchip img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 6px rgba(255,255,255,.3))}
+.lchip.pa{position:absolute;right:12px;top:8px;width:56px;height:56px}
 .lchip.mid{position:absolute;left:50%;top:50%;transform:translate(-55%,-50%);width:58%;aspect-ratio:1}
-.lchip.sm{width:30px;height:30px;box-shadow:0 0 0 2px var(--tc2,#fff)}
+.lchip.sm{width:32px;height:32px}
 .tcol{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 62%,#000))}
 .tcol:after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;background:var(--tc2)}
-.tcol .wm{position:absolute;left:-16%;top:-14%;width:86%;opacity:.16;filter:brightness(0) invert(1)}
+.tcol .wm{position:absolute;left:-16%;top:-14%;width:86%;opacity:.42;filter:drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 0 1px rgba(255,255,255,.6))}
 .tcol .hs{position:absolute;left:50%;transform:translateX(-52%);bottom:0;height:90%;width:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
 .caps{font-family:var(--disp);font-weight:800;text-transform:uppercase;line-height:.95;letter-spacing:.2px}
 /* results */
@@ -220,7 +221,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .pc2 .pr2{cursor:pointer}
 .pc2 .tp{display:grid;grid-template-columns:86px minmax(0,1fr);min-height:92px}
 .pc2 .id{position:relative;padding:10px 12px;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 22%,#121A24),#121A24);min-width:0}
-.pc2 .id .lchip{position:absolute;right:10px;top:10px;width:32px;height:32px}
+.pc2 .id .lchip{position:absolute;right:10px;top:8px;width:40px;height:40px}
 .pc2 .nm{font-size:23px;margin-right:38px}.pc2 .mt2{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-top:5px}
 .pc2 .rb{display:grid;grid-template-columns:1fr 1fr 104px;border-top:3px solid var(--tc);background:var(--bg2)}
 .pc2 .rb>div{padding:8px 12px;border-right:1px solid var(--line)}.pc2 .rb .k{font-size:10px;letter-spacing:1px;color:var(--ink3);font-weight:600;text-transform:uppercase}
