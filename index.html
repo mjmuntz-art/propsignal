@@ -91,6 +91,26 @@ h1,h2,h3{margin:0;text-wrap:balance}
 /* play cards */
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 @media (max-width:900px){.cards{grid-template-columns:1fr}}
+/* P38.3: three across on wide screens (six plays = two even rows), two
+   across on mid screens; a short last row is centered so nothing hangs. */
+@media (min-width:1180px){
+  .cards{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .cards>.pc{grid-column:span 2}
+  .cards.r1>.pc:last-child{grid-column:3/span 2}
+  .cards.r2>.pc:nth-last-child(2){grid-column:2/span 2}
+  .cards.r2>.pc:last-child{grid-column:4/span 2}
+  .cards .pc-hero .who{left:128px}
+  .cards .pc-hero .nm{font-size:24px}
+  .cards .why{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cards .tiles2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wrap,.topin{max-width:1400px}
+}
+@media (min-width:901px) and (max-width:1179px){
+  .cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cards>.pc{grid-column:span 2}
+  .cards.odd>.pc:last-child{grid-column:2/span 2}
+}
+}
 .pc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
 .pc.pending{border-style:dashed;border-color:var(--line2)}
 .pc.void{opacity:.55}
@@ -516,8 +536,9 @@ var API = (function(){
       tile('Consistency',cons?cons.charAt(0).toUpperCase()+cons.slice(1):'—',cons==='swingy'?'amb':cons==='steady'?'pos':'',cv!=null?'±'+Math.round(cv*100)+'% game to game':'not enough games')+
       tile('Matchup',mpv==null?'—':(mpv>0?'+':mpv<0?'−':'')+Math.abs(Math.round(mpv*100))+'%',mpv==null?'':((over?mpv>0:mpv<0)?'pos':(over?mpv<0:mpv>0)?'neg':''),c.matchup?esc(words(c.matchup)).toLowerCase()+' vs '+esc(p.opp):'vs '+esc(p.opp))+
       '</div>';
-    var h='<div class="scout">'+boxes+'<div class="sh"><span>Averages vs the '+(L==null?'line':L+' line')+'</span><span>'+(v==='A'?'tonight: away':v==='H'?'tonight: home':'')+'</span></div>'+
+    var h='<div class="scout"><div class="s-a">'+boxes+'<div class="sh"><span>Averages vs the '+(L==null?'line':L+' line')+'</span><span>'+(v==='A'?'tonight: away':v==='H'?'tonight: home':'')+'</span></div>'+
       '<table class="av"><tr><th>Split</th><th>Avg</th><th>Margin</th><th>'+(over?'Over':'Under')+'</th></tr>'+rows+'</table>'+(note?'<div class="avnote">'+note+'</div>':'');
+    h+='</div><div class="s-b">';
     if(games.length){var n=Math.min(state.gn||5,games.length);
       h+='<div class="sh"><span>Last '+n+' games · '+hits(games.slice(0,n))+' of '+n+' '+(over?'over':'under')+'</span><span class="gtog"><button data-gn="5" aria-pressed="'+((state.gn||5)===5)+'">Last 5</button><button data-gn="10" aria-pressed="'+(state.gn===10)+'">Last 10</button></span></div>'+chart(p,games,n);}
     var S=c.scores||{};
@@ -529,7 +550,7 @@ var API = (function(){
         fx('Matchup',S.matchup,esc(mp+words(c.matchup||'').toLowerCase()))+fx('Market',S.market,esc(words(c.marketStatus||'').toLowerCase()))+
         fx('Reliability',S.reliability,cons||'');
     }
-    return h+'</div>';
+    return h+'</div></div>';
   }
   function playCard(p,rank){
     var c=p.ctx||{},isVoid=p.outcome==='VOID',outNow=!isVoid&&/^(OUT|DOUBTFUL|INACTIVE|SUSPENDED)$/.test(p.status||'');
@@ -643,7 +664,7 @@ var API = (function(){
       '<div class="chips"><span class="chip"><b>'+tonight.length+'</b> play'+(tonight.length===1?'':'s')+'</span><span class="chip mint"><b>'+lockedN+'</b> locked</span>'+(pend.length?'<span class="chip amb">'+pend.length+' can still change'+(nextLock?' · next lock ~'+esc(nextLock):'')+'</span>':'')+
       '<span class="chip">Record <b class="n">'+wl(S)+'</b> <b class="n '+cls(S.units)+'">'+units(S.units)+'</b></span></div></div>'+
       '<div class="bar">'+seg('list',LISTS,state.list,true)+'</div>';
-    h+=tonight.length?'<div class="cards'+(state.entered?'':' enter')+'" id="cards">'+sorted.map(function(p){return playCard(p,rk[pkey(p)]);}).join('')+'</div>':
+    h+=tonight.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(tonight.length%3)+(tonight.length%2?' odd':'')+'" id="cards">'+sorted.map(function(p){return playCard(p,rk[pkey(p)]);}).join('')+'</div>':
       '<div class="empty"><b>Nothing on this card yet.</b>Plays appear once today’s xEP tables are imported and the next automation run builds the board. Short slates make short cards.</div>';
     h+='<section class="sec"><details class="fold box"'+(watch.length?' open':'')+'><summary class="foldh"><h3>Model cooled · '+watch.length+'</h3><span>Left the card before lock'+(d.watch&&d.watch.record&&d.watch.record.plays?' · season '+wl(d.watch.record)+', '+units(d.watch.record.units):'')+'</span></summary>'+
       (watch.length?watch.map(cooledRow).join(''):'<div class="rr"><span></span><div class="note2">Nothing has cooled off today. Plays that leave the card before their game locks show here with the reason.</div><span></span></div>')+'</details></section>';
@@ -711,7 +732,7 @@ var API = (function(){
       var p=x.date.split('-'),dt=new Date(+p[0],+p[1]-1,+p[2]);
       return '<button class="day '+cl+'" data-date="'+x.date+'" aria-pressed="'+(state.date===x.date)+'"><div class="dw">'+dt.toLocaleDateString(undefined,{weekday:'short'})+'</div><div class="dd n">'+dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</div><div class="dr n">'+(r.plays?wl(r):'—')+'</div></button>';
     }).join('');
-    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top 5'],['OVER','Top overs'],['UNDER','Top unders'],['EVERY','Every play']],state.every?'EVERY':state.list,true)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top '+(((state.data||{}).rules||{}).maxPlays||5)],['OVER','Top overs'],['UNDER','Top unders'],['EVERY','Every play']],state.every?'EVERY':state.list,true)+'</div></div>'+
       (days.length?'<div class="rail" id="rail">'+rail+'</div>':'')+monthView(d)+
       '<div class="bar"><label class="pickdate">Jump to a date <input type="date" id="pickdate" value="'+esc(state.date||'')+'" max="'+esc(d.today||'')+'"></label></div>';
     if(!state.date)return h+'<div class="empty"><b>No graded plays yet.</b>Plays are graded automatically after their games finish, usually by the next morning.</div>';
@@ -750,7 +771,7 @@ var API = (function(){
       var stats={};mine.forEach(function(x){var k=(STAT[x.stat]||x.stat)+' '+(x.direction==='Over'?'overs':'unders');var o=stats[k]=stats[k]||{w:0,l:0};if(x.outcome==='HIT')o.w++;else if(x.outcome==='MISS')o.l++;});
       var log='<div class="plog">'+(Object.keys(stats).length>1?'<div class="sum">'+Object.keys(stats).map(function(k){return '<span class="flag">'+esc(k)+' <b>'+stats[k].w+'–'+stats[k].l+'</b></span>';}).join('')+'</div>':'')+
         mine.map(function(x){
-          var lt=(x.lists||[]).map(function(l){return l==='ALL'?'Top 5':l==='OVER'?'Overs':'Unders';}).join(' · ');
+          var lt=(x.lists||[]).map(function(l){return l==='ALL'?'Top '+(((state.data||{}).rules||{}).maxPlays||5):l==='OVER'?'Overs':'Unders';}).join(' · ');
           return '<div class="pl"><span class="dt">'+esc(dayLabel(x.date,{month:'short',day:'numeric'}))+'</span>'+
             '<div><div class="pk">'+esc(pickTxt(x.direction,x.line,x.stat))+(x.opp?' <span class="ds">vs '+esc(x.opp)+'</span>':'')+'</div><div class="ds">'+(x.odds!=null?odds(x.odds)+' '+esc(x.book||'')+' · ':'')+(x.edge!=null?'edge '+pts(x.edge)+' · ':'')+(x.grade?esc(x.grade)+' · ':'')+esc(lt)+'</div></div>'+
             '<span class="act n">'+(x.actual==null?'—':x.actual)+'</span>'+
