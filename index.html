@@ -166,6 +166,31 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .pa-st .v small{font-size:14px}
 .pa-st .s{font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc .pc-body>.flags:first-child{margin-top:0}
+.lv{background:var(--bg2);overflow:hidden;border-bottom:1px solid var(--line)}
+.livebox:empty{display:none}
+/* while a game is live or final the pre-game stats shrink to one slim line */
+.pc.is-live .pa-st>div{padding:6px 10px;display:flex;align-items:baseline;justify-content:space-between;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.pa-st .ks{display:none}.pc.is-live .pa-st .kl{display:none}.pc.is-live .pa-st .ks{display:inline}
+.pc.is-live .pa-st .k{font-size:9.5px}.pc.is-live .pa-st .v{font-size:16px}.pc.is-live .pa-st .v small{font-size:11px}.pc.is-live .pa-st .s{display:none}
+.lv-bug{display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;border-bottom:1px solid var(--line);min-height:36px}
+.lv-clk{background:var(--neg);color:#fff;font-family:var(--disp);font-weight:800;font-size:15px;padding:6px 11px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.lv-clk i{width:7px;height:7px;border-radius:50%;background:#fff;animation:lvp 1.2s infinite}
+.lv-clk.fin{background:var(--line2);color:var(--ink)}
+@keyframes lvp{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.lv-clk i{animation:none}}
+.lv-sc{display:flex;align-items:stretch;min-width:0}
+.lv-tm{display:flex;align-items:center;gap:7px;padding:0 11px;border-left:4px solid var(--c);font-family:var(--disp);font-weight:800}
+.lv-tm span{color:var(--ink2);font-size:14px}.lv-tm b{font-size:19px}
+.lv-min{display:flex;align-items:center;padding:0 11px;font-size:12px;color:var(--ink3);white-space:nowrap}
+.lv-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:10px 12px 8px}
+.lv-big{font-family:var(--disp);font-weight:800;font-size:48px;line-height:.85}.lv-big small{font-size:18px;color:var(--ink3);margin-left:4px}
+.lv-st{font-family:var(--disp);font-weight:800;font-size:20px;line-height:1.1}.lv-st.pos{color:var(--mint)}.lv-st.neg{color:var(--neg)}.lv-st.amb{color:var(--amber)}
+.lv-sub{font-size:12px;color:var(--ink3);margin-top:2px}.lv-sub b{color:var(--ink)}
+.lv-steps{display:flex;gap:3px;padding:0 12px 12px}
+.lv-steps i{flex:1;height:9px;border-radius:2px;background:var(--line)}.lv-steps i.on{background:var(--acc)}.lv-steps i.g{background:var(--mint)}.lv-steps i.r{background:var(--neg)}
+.lv-note,.lv-wait{padding:10px 12px;font-size:12.5px;color:var(--ink3)}.lv-note.bad{color:var(--neg);font-weight:600}
+@media (max-width:440px){.lv-tm{padding:0 8px}.lv-tm b{font-size:17px}.lv-clk{font-size:14px;padding:6px 9px}.lv-big{font-size:42px}}
+
 .pa-col .wm{opacity:.42;filter:drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 0 1px rgba(255,255,255,.6))}
 /* P40: logo badge (always readable) + shared team column */
 .lchip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -748,11 +773,12 @@ var API = (function(){
     var ropen=state.full?state.ropen[pkey(p)]!==false:!!state.ropen[pkey(p)];
     var venue=venueOf(p),fm2=form(p),stl=STAT[p.stat]||p.stat;
     var stats='<div class="pa-st">'+
-      '<div><div class="k">Proj</div><div class="v n">'+(proj==null?'—':proj)+'</div><div class="s">'+(gap==null?'xEP':'<span class="'+(gap>0?'pos':'neg')+'">'+(gap>0?'+':'−')+Math.abs(gap).toFixed(1)+'</span> '+(p.direction==='Over'?(gap>0?'above':'below'):(gap>0?'below':'above')))+'</div></div>'+
-      '<div><div class="k">Hit chance</div><div class="v n">'+(p.modelP==null?'—':Math.round(p.modelP*100)+'<small>%</small>')+'</div><div class="s">need '+pct(p.breakEven,0)+'</div></div>'+
-      '<div><div class="k">'+(fm2&&fm2.n?'Last '+fm2.n:'Last 5')+'</div><div class="v n">'+(fm2&&fm2.n?fm2.h+'/'+fm2.n:esc(p.l5||'—'))+'</div><div class="s">'+(p.direction==='Over'?'over ':'under ')+(p.line==null?'':p.line)+'</div></div>'+
-      '<div><div class="k">Min</div><div class="v n">'+(c.projMin==null?'—':Math.round(c.projMin))+'</div><div class="s">'+esc(c.minTrend?words(c.minTrend).toLowerCase():'projected')+'</div></div></div>';
-    return '<article class="pc'+(p.locked?'':' pending')+(isVoid?' void':'')+'" data-r="'+ropen+'" data-k="'+k+'" data-open="'+open+'" style="'+tv(p.team)+'">'+
+      '<div><div class="k"><span class="kl">Proj</span><span class="ks">Proj</span></div><div class="v n">'+(proj==null?'—':proj)+'</div><div class="s">'+(gap==null?'xEP':'<span class="'+(gap>0?'pos':'neg')+'">'+(gap>0?'+':'−')+Math.abs(gap).toFixed(1)+'</span> '+(p.direction==='Over'?(gap>0?'above':'below'):(gap>0?'below':'above')))+'</div></div>'+
+      '<div><div class="k"><span class="kl">Hit chance</span><span class="ks">Hit</span></div><div class="v n">'+(p.modelP==null?'—':Math.round(p.modelP*100)+'<small>%</small>')+'</div><div class="s">need '+pct(p.breakEven,0)+'</div></div>'+
+      '<div><div class="k"><span class="kl">'+(fm2&&fm2.n?'Last '+fm2.n:'Last 5')+'</span><span class="ks">'+(fm2&&fm2.n?'L'+fm2.n:'L5')+'</span></div><div class="v n">'+(fm2&&fm2.n?fm2.h+'/'+fm2.n:esc(p.l5||'—'))+'</div><div class="s">'+(p.direction==='Over'?'over ':'under ')+(p.line==null?'':p.line)+'</div></div>'+
+      '<div><div class="k"><span class="kl">Min</span><span class="ks">Min</span></div><div class="v n">'+(c.projMin==null?'—':Math.round(c.projMin))+'</div><div class="s">'+esc(c.minTrend?words(c.minTrend).toLowerCase():'projected')+'</div></div></div>';
+    var lvh=liveHtml(p);
+    return '<article class="pc'+(p.locked?'':' pending')+(isVoid?' void':'')+(lvh.indexOf('lv-bug')!==-1?' is-live':'')+'" data-r="'+ropen+'" data-k="'+k+'" data-open="'+open+'" style="'+tv(p.team)+'">'+
       '<div class="pa-top"><div class="pa-col">'+(p.teamLogo?'<img class="wm" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+
         (p.headshot?'<img class="hs" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':lchip(p.teamLogo,'mid'))+'</div>'+
       '<div class="pa-id">'+(p.headshot?lchip(p.teamLogo,'pa'):'')+
@@ -760,10 +786,10 @@ var API = (function(){
         '<div><div class="pa-nm">'+esc(p.player)+'</div><div class="pa-mt">'+esc(p.team)+(venue==='A'?' @ ':' vs ')+esc(p.opp)+(p.tip?' · '+esc(p.tip):'')+(venue?' · <b>'+(venue==='A'?'Away':'Home')+'</b>':'')+'</div></div></div></div>'+
       '<div class="pa-bar"><div class="pa-pk"><span class="d '+(p.direction==='Over'?'over':'under')+'">'+(p.direction==='Over'?'OVER':'UNDER')+'</span><span class="n">'+(p.line==null?'—':p.line)+'</span><small>'+esc(stl)+'</small></div>'+
         '<div class="pa-pr"><b class="n">'+odds(p.odds)+'</b><em>'+esc(p.book||'')+'<br>'+(isVoid?'VOID':esc(p.decision||''))+(p.grade?' · '+esc(p.grade):'')+'</em></div>'+
-        '<div class="pa-ed"><div class="k">EDGE</div><div class="v n">'+pts(p.edge)+'</div></div></div>'+stats+
+        '<div class="pa-ed"><div class="k">EDGE</div><div class="v n">'+pts(p.edge)+'</div></div></div>'+
+      '<div class="livebox" data-live="'+k+'">'+lvh+'</div>'+stats+
       '<div class="pc-body">'+moveHtml(p)+
         '<div class="flags">'+flags.join('')+'</div>'+scout(p)+
-        '<div class="livebox" data-live="'+k+'">'+liveHtml(p)+'</div>'+
       '</div>'+
       '<div class="pc-foot">'+lk+'<button class="more" data-more="'+k+'">Full game log <i>▾</i></button></div>'+
       '<div class="detail">'+(open?detail(p):'')+'</div></article>';
@@ -802,22 +828,35 @@ var API = (function(){
     return head+'<div class="avgs">'+avg('This season',P.season)+avg('Last season',P.lastSeason)+'</div>'+
       '<table class="gl n"><thead><tr><th>Date</th><th>Opp</th><th>Min</th><th>Pts</th><th>Reb</th><th>Ast</th><th>3pm</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
+  // P41: live stats as a TV scorebug (clock + both teams in their colors),
+  // his number against the line, pace, and one block per unit up to the line.
+  var ESPNAB={GS:'GSW',NY:'NYK',SA:'SAS',NO:'NOP',UTAH:'UTA',WSH:'WAS',BRK:'BKN',PHO:'PHX'};
+  function liveTeam(t){t=String(t||'').toUpperCase();return ESPNAB[t]||t;}
   function liveHtml(p){
     var g=state.live.games[p.espnGameId],l=state.live.players[p.espnId];
-    if(!g||g.state==='pre'||g.state==='unknown')return (p.tipIso&&Date.now()>=Date.parse(p.tipIso)&&!p.outcome)?'<div class="live"><span class="note2">Live stats loading…</span></div>':'';
-    var fin=g.state==='post',score=(g.away&&g.home)?esc(g.away.team)+' '+(g.away.score==null?'':g.away.score)+' · '+esc(g.home.team)+' '+(g.home.score==null?'':g.home.score):'';
-    var badge=fin?'<span class="badge">FINAL</span>':'<span class="badge live"><i></i>'+esc(g.detail||'LIVE')+'</span>';
-    if(!l)return '<div class="live"><div class="row1">'+badge+'<span>'+score+'</span></div><div class="note2" style="margin-top:6px">No box-score line yet.</div></div>';
-    if(l.dnp)return '<div class="live"><div class="row1">'+badge+'<span>'+score+'</span></div><div class="need bad" style="margin-top:6px">Not playing'+(l.reason?' ('+esc(l.reason)+')':'')+' · no action, 0 units</div></div>';
+    if(!g||g.state==='pre'||g.state==='unknown')return (p.tipIso&&Date.now()>=Date.parse(p.tipIso)&&!p.outcome)?'<div class="lv"><div class="lv-wait">Live stats loading…</div></div>':'';
+    var fin=g.state==='post';
+    var tm=function(x){if(!x)return '';var c=tc(liveTeam(x.team));return '<div class="lv-tm" style="--c:'+c[0]+'"><span>'+esc(x.team)+'</span><b class="n">'+(x.score==null?'':x.score)+'</b></div>';};
+    var bug='<div class="lv-bug"><div class="lv-clk'+(fin?' fin':'')+'">'+(fin?'FINAL':'<i></i>'+esc(g.detail||'LIVE'))+'</div><div class="lv-sc">'+tm(g.away)+tm(g.home)+'</div>'+
+      '<div class="lv-min">'+(l&&!l.dnp&&l.MIN!=null?l.MIN+' min':'')+'</div></div>';
+    if(!l)return '<div class="lv">'+bug+'<div class="lv-note">No box-score line yet.</div></div>';
+    if(l.dnp)return '<div class="lv">'+bug+'<div class="lv-note bad">Not playing'+(l.reason?' ('+esc(l.reason)+')':'')+' · no action, 0 units</div></div>';
     var v=l[p.stat]==null?0:l[p.stat],line=p.line,over=p.direction==='Over',need='',c='';
     if(line!=null){
-      if(over){if(v>line){need=fin?'Hit (unofficial)':'Cleared the line';c='good';}else{need=fin?(v===line?'Push':'Missed (unofficial)'):'Needs '+(Math.floor(line)+1-v)+' more';c=fin&&v!==line?'bad':'';}}
-      else{if(v>line){need=fin?'Missed (unofficial)':'Over the line';c='bad';}else{var cu=Math.ceil(line)-1-v;need=fin?(v===line?'Push':'Hit (unofficial)'):(cu<=0?'No room left':cu+' more and it still hits');c=fin?(v===line?'':'good'):(cu<=1?'bad':'');}}
+      if(over){if(v>line){need=fin?'HIT':'Cleared it';c='pos';}else{need=fin?(v===line?'PUSH':'MISS'):'Needs '+(Math.floor(line)+1-v)+' more';c=fin?(v===line?'amb':'neg'):'';}}
+      else{if(v>line){need=fin?'MISS':'Over the line';c='neg';}else{var cu=Math.ceil(line)-1-v;need=fin?(v===line?'PUSH':'HIT'):(cu<=0?'No room left':cu+' to spare');c=fin?(v===line?'amb':'pos'):(cu<=1?'amb':'pos');}}
     }
-    var mx=Math.max(line==null?v:line*1.5,v,1),w=Math.min(100,v/mx*100),lp=line==null?null:Math.min(100,line/mx*100),fc=over?(v>line?'good':''):(v>line?'bad':'good');
-    return '<div class="live"><div class="row1">'+badge+'<span>'+score+'</span></div><div class="row2"><span class="now n">'+v+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></span>'+(need?'<span class="need '+c+'">'+need+'</span>':'')+
-      '<span class="note2">'+(l.MIN!=null?l.MIN+' min':'')+(l.PF!=null&&l.PF>=4?' · '+l.PF+' fouls':'')+'</span></div>'+
-      '<div class="lmeter"><div class="f '+fc+'" style="width:'+w.toFixed(1)+'%"></div>'+(lp==null?'':'<div class="t" style="left:'+lp.toFixed(1)+'%"></div>')+'</div></div>';
+    // pace: current total scaled by minutes played vs projected minutes
+    var pm=(p.ctx||{}).projMin,pace=null;
+    if(!fin&&l.MIN!=null&&l.MIN>=4&&pm){pace=Math.round(v/Math.min(1,l.MIN/pm)*10)/10;}
+    var sub=fin?'Final line':(pace!=null?'On pace for <b class="n">'+pace+'</b>':'Pace shows after a few minutes')+(l.PF!=null&&l.PF>=4?' · <span class="neg">'+l.PF+' fouls</span>':'');
+    var blocks='';
+    if(line!=null){
+      var nb=Math.max(1,Math.ceil(line)),per=nb>34?2:1,cnt=Math.ceil(nb/per),hitOver=over&&v>line,bust=!over&&v>line;
+      for(var i=1;i<=cnt;i++){var filled=hitOver||v>=i*per;blocks+='<i class="'+(filled?(hitOver?'g':bust?'r':'on'):'')+'"></i>';}
+    }
+    return '<div class="lv">'+bug+'<div class="lv-main"><div class="lv-big n">'+v+'<small>/ '+(line==null?'—':line)+'</small></div><div><div class="lv-st '+c+'">'+need+'</div><div class="lv-sub">'+sub+'</div></div></div>'+
+      (blocks?'<div class="lv-steps" aria-hidden="true">'+blocks+'</div>':'')+'</div>';
   }
   function cooledRow(w){
     var moved=(w.lineNow!=null&&w.lineNow!==w.firstLine?' · line now '+w.lineNow:'')+(w.oddsNow!=null&&w.oddsNow!==w.firstOdds?' · now '+odds(w.oddsNow):'');
@@ -1138,7 +1177,7 @@ var API = (function(){
   }
   function paintLive(){
     if(state.view!=='tonight'||!state.data)return;
-    state.data.tonight.forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el)el.innerHTML=liveHtml(p);});
+    state.data.tonight.forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el){el.innerHTML=liveHtml(p);var pc=el.closest('.pc');if(pc)pc.classList.toggle('is-live',!!el.querySelector('.lv-bug'));}});
   }
   function pollLive(force){
     var t=liveTargets();if(!t.length||liveBusy)return;
