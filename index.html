@@ -1001,12 +1001,12 @@ var API = (function(){
     if(!P.length)return h+'<div class="empty"><b>No players yet for this view.</b>'+(era==='current'?'Current rules only counts plays since the last ModelVersion change. Switch to All-time to see everyone.':'Each player who makes a locked card gets a running record here.')+'</div>';
     return h+'<div class="pgrid r'+(P.length%3)+(P.length%2?' odd':'')+'">'+P.map(function(p){
       var r=state.list==='ALL'?p.record:(p.lists[state.list]||p.record);
-      var mine=(p.last||[]).filter(function(x){return state.list==='ALL'||(x.lists||[]).indexOf(state.list)!==-1;});
+      var mine=(p.last||[]).filter(function(x){return state.list==='ALL'||state.list==='FORM'||(x.lists||[]).indexOf(state.list)!==-1;});
       var open=state.popen===p.playerId;
       var stats={};mine.forEach(function(x){var k=(STAT[x.stat]||x.stat)+' '+(x.direction==='Over'?'overs':'unders');var o=stats[k]=stats[k]||{w:0,l:0};if(x.outcome==='HIT')o.w++;else if(x.outcome==='MISS')o.l++;});
       var log='<div class="plog">'+(Object.keys(stats).length>1?'<div class="sum">'+Object.keys(stats).map(function(k){return '<span class="flag">'+esc(k)+' <b>'+stats[k].w+'–'+stats[k].l+'</b></span>';}).join('')+'</div>':'')+
         mine.map(function(x){
-          var lt=(x.lists||[]).map(function(l){return l==='ALL'?'Top '+(((state.data||{}).rules||{}).maxPlays||5):l==='OVER'?'Overs':'Unders';}).join(' · ');
+          var lt=state.list==='FORM'?'Form 6':(x.lists||[]).map(function(l){return l==='ALL'?'Top '+(((state.data||{}).rules||{}).maxPlays||5):l==='OVER'?'Overs':'Unders';}).join(' · ');
           return '<div class="pl"><span class="dt">'+esc(dayLabel(x.date,{month:'short',day:'numeric'}))+'</span>'+
             '<div><div class="pk">'+esc(pickTxt(x.direction,x.line,x.stat))+(x.opp?' <span class="ds">vs '+esc(x.opp)+'</span>':'')+'</div><div class="ds">'+(x.odds!=null?odds(x.odds)+' '+esc(x.book||'')+' · ':'')+(x.edge!=null?'edge '+pts(x.edge)+' · ':'')+(x.grade?esc(x.grade)+' · ':'')+esc(lt)+'</div></div>'+
             '<span class="act n">'+(x.actual==null?'—':x.actual)+'</span>'+
