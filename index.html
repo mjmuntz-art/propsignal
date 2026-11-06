@@ -70,6 +70,9 @@ h1,h2,h3{margin:0;text-wrap:balance}
 
 /* controls */
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.sortlab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.sortbox{display:flex;align-items:center;gap:10px}.sortbox .sortlab{margin-left:0}.sortbox.pso{margin-left:auto}
+@media(max-width:640px){.sortbox.pso{margin-left:0;width:100%}.bar .search{width:100%}}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;padding:3px;background:var(--panel)}
 .seg button{border:0;background:none;color:var(--ink2);font-size:13px;font-weight:600;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--panel3);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
@@ -594,7 +597,7 @@ var API = (function(){
   var ERAS=[['current','Current rules'],['all','All-time'],['replay','Replay']];
   var state={data:null,view:'tonight',list:'ALL',era:'current',date:null,days:{},open:null,live:{games:{},players:{}},boardStat:'ALL',boardOnly:false,q:'',pq:'',sort:{k:'edge',d:-1},updating:false,entered:false,month:null,calOpen:false};
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
-  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
+  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var ps=ls('ps_psort');state.psort=/^(units|hit|plays|name)$/.test(ps||'')?ps:'units';var rs=ls('ps_rsort');state.rsort=/^(rank|units|edge)$/.test(rs||'')?rs:'rank';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
 
   // ---- formatting ----------------------------------------------------------
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -984,7 +987,8 @@ var API = (function(){
       '<div><div class="k">Hit rate</div><div class="v n">'+(w+l?Math.round(w/(w+l)*100)+'%':'—')+'</div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+'</div></div>'+
       '<div><div class="k">Model cooled</div><div class="v n '+(cooled.length?cls(cu):'')+'">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
       '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>';
-    h+='<section class="sec"><div class="sech"><h2>Locked plays</h2><span>What counted</span></div>'+(plays.length?'<div class="rlist">'+plays.map(resultRow).join('')+'</div>':'<div class="empty">No locked plays on this list that day.</div>')+'</section>';
+    var sp=plays.slice();if(state.rsort==='units')sp.sort(function(a,b){return (b.units==null?-99:b.units)-(a.units==null?-99:a.units);});else if(state.rsort==='edge')sp.sort(function(a,b){return (b.edge==null?-99:b.edge)-(a.edge==null?-99:a.edge);});
+    h+='<section class="sec"><div class="sech"><h2>Locked plays</h2>'+(plays.length>1?'<span class="sortbox"><span class="sortlab">Sort</span>'+seg('rsort',[['rank','Rank'],['units','Units'],['edge','Edge']],state.rsort)+'</span>':'<span>What counted</span>')+'</div>'+(plays.length?'<div class="rlist">'+sp.map(resultRow).join('')+'</div>':'<div class="empty">No locked plays on this list that day.</div>')+'</section>';
     if(cooled.length)h+='<section class="sec"><details class="fold box" open><summary class="foldh"><h3>Model cooled · '+cooled.length+'</h3><span>On the card earlier, dropped before lock</span></summary>'+cooled.map(cooledRow).join('')+'</details></section>';
     if(morning.length||blocked.length)h+='<section class="sec"><details class="fold box"><summary class="foldh"><h3>Morning card (replay) · '+morning.length+'</h3><span>Today’s rules at that morning’s lines</span></summary>'+morning.map(resultRow).join('')+
       (blocked.length?'<div class="foldh" style="border-top:1px solid var(--line)"><h3 style="font-size:16px">Locked plays today’s rules would block</h3><span>'+blocked.length+'</span></div>'+blocked.map(resultRow).join(''):'')+'</details></section>';
@@ -997,7 +1001,13 @@ var API = (function(){
     var E=(d.record.eras||{})[era]||{},P=(state.list==='FORM'?(E.playersForm||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||state.list==='FORM'||p.lists[state.list];});
     if(state.pq)P=P.filter(function(p){return (p.player+' '+p.team).toLowerCase().indexOf(state.pq)!==-1;});
     var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form 6']],state.list,true)+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
-      '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"></div>';
+      '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"><span class="sortbox pso"><span class="sortlab">Sort</span>'+seg('psort',[['units','Units'],['hit','Hit rate'],['plays','Plays'],['name','A–Z']],state.psort)+'</span></div>';
+    var rOf=function(p){return state.list==='ALL'?p.record:(p.lists[state.list]||p.record);};
+    P=P.slice().sort(function(a,b){var ra=rOf(a),rb=rOf(b);
+      if(state.psort==='name')return String(a.player).localeCompare(String(b.player));
+      if(state.psort==='hit')return ((rb.hitRate||0)-(ra.hitRate||0))||((rb.plays||0)-(ra.plays||0))||((rb.units||0)-(ra.units||0));
+      if(state.psort==='plays')return ((rb.plays||0)-(ra.plays||0))||((rb.units||0)-(ra.units||0));
+      return ((rb.units||0)-(ra.units||0))||((rb.plays||0)-(ra.plays||0));});
     if(!P.length)return h+'<div class="empty"><b>No players yet for this view.</b>'+(era==='current'?'Current rules only counts plays since the last ModelVersion change. Switch to All-time to see everyone.':'Each player who makes a locked card gets a running record here.')+'</div>';
     return h+'<div class="pgrid r'+(P.length%3)+(P.length%2?' odd':'')+'">'+P.map(function(p){
       var r=state.list==='ALL'?p.record:(p.lists[state.list]||p.record);
@@ -1175,6 +1185,8 @@ var API = (function(){
     document.querySelectorAll('[data-rview]').forEach(function(b){b.onclick=function(){state.full=b.getAttribute('data-rview')==='full';state.ropen={};ls('ps_full',state.full?'1':'');render();};});
     document.querySelectorAll('[data-gn]').forEach(function(b){b.onclick=function(e){e.stopPropagation();state.gn=+b.getAttribute('data-gn');ls('ps_gn',String(state.gn));render();};});
     document.querySelectorAll('[data-rlist]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-rlist');if(v==='EVERY'){state.every=true;}else{state.every=false;state.list=v;ls('ps_list',v);}ls('ps_every',state.every?'1':'');render();};});
+    document.querySelectorAll('[data-psort]').forEach(function(b){b.onclick=function(){state.psort=b.getAttribute('data-psort');ls('ps_psort',state.psort);render();};});
+    document.querySelectorAll('[data-rsort]').forEach(function(b){b.onclick=function(){state.rsort=b.getAttribute('data-rsort');ls('ps_rsort',state.rsort);render();};});
     document.querySelectorAll('[data-pera]').forEach(function(b){b.onclick=function(){state.pera=b.getAttribute('data-pera');ls('ps_pera',state.pera);render();};});
     document.querySelectorAll('[data-pid]').forEach(function(el){var t=function(){var id=el.getAttribute('data-pid');state.popen=state.popen===id?null:id;var w=el.parentNode,o=state.popen===id;document.querySelectorAll('.pwrap[data-open="true"]').forEach(function(x){if(x!==w){x.setAttribute('data-open','false');x.firstChild.setAttribute('aria-expanded','false');}});w.setAttribute('data-open',o);el.setAttribute('aria-expanded',o);};el.onclick=t;el.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}};});
     document.querySelectorAll('[data-era]').forEach(function(b){b.onclick=function(){state.era=b.getAttribute('data-era');ls('ps_era',state.era);render();};});
