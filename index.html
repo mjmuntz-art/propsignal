@@ -994,7 +994,7 @@ var API = (function(){
   // ---- players -------------------------------------------------------------
   function viewPlayers(d){
     var era=state.pera||'all';
-    var E=(d.record.eras||{})[era]||{},P=(state.list==='FORM'?(E.playersForm||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||p.lists[state.list];});
+    var E=(d.record.eras||{})[era]||{},P=(state.list==='FORM'?(E.playersForm||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||state.list==='FORM'||p.lists[state.list];});
     if(state.pq)P=P.filter(function(p){return (p.player+' '+p.team).toLowerCase().indexOf(state.pq)!==-1;});
     var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form 6']],state.list,true)+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
       '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"></div>';
