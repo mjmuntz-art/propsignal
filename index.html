@@ -495,6 +495,8 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .mv .tag{font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:11.5px}
 .mv .tag.our{color:var(--mint);border-color:var(--mint-line);background:var(--mint-bg)}
 .mv .tag.vs{color:var(--amber);border-color:var(--amber-line);background:var(--amber-bg)}
+.mv .tag.ok{color:var(--mint);border-color:var(--mint-line);background:var(--mint-bg)}
+.mvm .sep{color:var(--dim)}
 .cal{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 14px}
 .cal .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .cal .ch h3{font-family:var(--disp);font-weight:700;font-size:19px}
@@ -597,7 +599,7 @@ var API = (function(){
   var ERAS=[['current','Current rules'],['all','All-time'],['replay','Replay']];
   var state={data:null,view:'tonight',list:'ALL',era:'current',date:null,days:{},open:null,live:{games:{},players:{}},boardStat:'ALL',boardOnly:false,q:'',pq:'',sort:{k:'edge',d:-1},updating:false,entered:false,month:null,calOpen:false};
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
-  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var ps=ls('ps_psort');state.psort=/^(units|hit|plays|name)$/.test(ps||'')?ps:'units';var rs=ls('ps_rsort');state.rsort=/^(rank|units|edge)$/.test(rs||'')?rs:'rank';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
+  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var fmo=ls('ps_fmode');state.fmode=fmo==='morning'?'morning':'lock';var ps=ls('ps_psort');state.psort=/^(units|hit|plays|name)$/.test(ps||'')?ps:'units';var rs=ls('ps_rsort');state.rsort=/^(rank|units|edge)$/.test(rs||'')?rs:'rank';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
 
   // ---- formatting ----------------------------------------------------------
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -753,6 +755,13 @@ var API = (function(){
   }
   // P42: Form 6 cards show the morning number and the price right now.
   function nowHtml(p){
+    if(p.morningView){
+      var mj0=p.maxJuice==null?-130:p.maxJuice,bad0=p.nowOdds!=null&&p.nowOdds<mj0,lm=p.nowLine!=null&&p.nowLine!==p.line;
+      var lineBad=lm&&(p.direction==='Over'?p.nowLine>p.line:p.nowLine<p.line);
+      return '<div class="mv mvm"><span>Morning</span><b class="n">'+p.line+' '+odds(p.odds)+'</b>'+(p.firstAt?'<span>'+esc(p.firstAt)+'</span>':'')+
+        '<span class="sep">→</span><span>Now</span><b class="n">'+(p.nowOdds==null?'off the board':(p.nowLine==null?'—':p.nowLine)+' '+odds(p.nowOdds))+'</b>'+(p.nowBook?'<span>'+esc(p.nowBook)+'</span>':'')+
+        (lm?'<span class="tag '+(lineBad?'vs':'ok')+'">Line '+(lineBad?'moved against':'moved your way')+'</span>':'')+(bad0?'<span class="tag vs">Past '+odds(mj0)+'</span>':'')+'</div>';
+    }
     if(!p.form||!p.locked||p.nowOdds==null)return '';
     var mj=p.maxJuice==null?-130:p.maxJuice,moved=p.nowOdds!==p.odds||p.nowLine!==p.line,bad=p.nowOdds<mj;
     if(!moved&&!bad)return '';
@@ -763,7 +772,7 @@ var API = (function(){
     var c=p.ctx||{},isVoid=p.outcome==='VOID',outNow=!isVoid&&/^(OUT|DOUBTFUL|INACTIVE|SUSPENDED)$/.test(p.status||'');
     var k=esc(pkey(p)),open=state.open===pkey(p);
     var g=state.live.games[p.espnGameId],isLive=g&&g.state==='in';
-    var badge=isVoid?'<span class="badge out">VOID</span>':outNow?'<span class="badge out">'+esc(String(p.status))+' · WILL VOID</span>':
+    var badge=p.morningView&&!isVoid&&!isLive?'<span class="badge lock">MORNING'+(p.firstAt?' · '+esc(p.firstAt):'')+'</span>':isVoid?'<span class="badge out">VOID</span>':outNow?'<span class="badge out">'+esc(String(p.status))+' · WILL VOID</span>':
       isLive?'<span class="badge live"><i></i>LIVE</span>':p.locked?'<span class="badge lock">LOCKED '+esc(p.lockedAt||'')+'</span>':'<span class="badge open">LOCKS ~'+esc(p.locksAt||'')+'</span>';
     var rk=rank?'<span class="badge">#'+rank+' '+(state.list==='ALL'?'ALL':state.list==='OVER'?'OVER':'UNDER')+'</span>':'';
     var fm=form(p),proj=p.proj,gap=(proj!=null&&p.line!=null)?(p.direction==='Over'?proj-p.line:p.line-proj):null;
@@ -777,7 +786,13 @@ var API = (function(){
     function flag(t,cl){flags.push('<span class="flag'+(cl?' '+cl:'')+'">'+t+'</span>');}
     if(!p.form&&c.formSignal!=null)flag('Form signal <b>'+c.formSignal+'%</b>','good');
     if(p.form&&p.gapPct!=null)flag('Form gap <b>'+Math.round(p.gapPct*100)+'%</b>','good');
-    if(p.form&&p.morningPick===false)flag('Not on the morning list','warn');
+    if(p.form&&!p.morningView&&p.morningPick===false)flag('Not on the morning list','warn');
+    if(p.form&&!p.morningView&&p.morningPick===true)flag('On the morning list','good');
+    if(p.morningView){var ls0=p.lockStatus;
+      if(ls0==='LOCKED')flag('Locked on the lock list'+(p.lockOdds!=null&&(p.lockOdds!==p.odds||p.lockLine!==p.line)?' at <b>'+p.lockLine+' '+odds(p.lockOdds)+'</b>':''),'good');
+      else if(ls0==='ON')flag('On the lock list for now','good');
+      else if(ls0==='DROPPED')flag('Dropped at lock','warn');
+      else if(ls0==='OFF')flag('Off the lock list for now','warn');}
     if(c.roleUp)flag('Role up: <b>'+esc(c.roleUp)+' out</b>','good');
     if(c.xepLine!=null&&p.line!=null&&c.xepLine!==p.line)flag('xEP line <b>'+c.xepLine+'</b>',(p.direction==='Over'?p.line<c.xepLine:p.line>c.xepLine)?'good':'warn');
     if(c.consensus!=null)flag('Market <b>'+c.consensus+'</b>');
@@ -786,7 +801,7 @@ var API = (function(){
     if(c.xepInjury)flag('xEP tag <b>'+esc(c.xepInjury)+'</b>','warn');
     if(p.lists&&p.lists.length)flag(esc(p.lists.map(function(l){return l==='ALL'?'All':l==='OVER'?'Overs':'Unders';}).join(' · ')));
     var lk=isVoid?'<span class="lk bad">Ruled out after lock · 0 units</span>':outNow?'<span class="lk bad">Listed '+esc(String(p.status).toLowerCase())+' · will void</span>':
-      p.locked?'<span class="lk on">Locked '+esc(p.lockedAt||'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':'<span class="lk off">Can change until ~'+esc(p.locksAt||'lock')+'</span>';
+      p.morningView?'<span class="lk on">Morning list'+(p.locksAt&&p.lockStatus!=='LOCKED'&&p.lockStatus!=='DROPPED'?' · game locks ~'+esc(p.locksAt):'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':p.locked?'<span class="lk on">Locked '+esc(p.lockedAt||'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':'<span class="lk off">Can change until ~'+esc(p.locksAt||'lock')+'</span>';
     var ropen=state.full?state.ropen[pkey(p)]!==false:!!state.ropen[pkey(p)];
     var venue=venueOf(p),fm2=form(p),stl=STAT[p.stat]||p.stat;
     var stats='<div class="pa-st">'+
@@ -805,7 +820,7 @@ var API = (function(){
         '<div class="pa-pr"><b class="n">'+odds(p.odds)+'</b><em>'+esc(p.book||'')+'<br>'+(isVoid?'VOID':p.form?'Form · model '+esc((p.modelDecision||'PASS').toLowerCase()):esc(p.decision||''))+(p.grade?' · '+esc(p.grade):'')+'</em></div>'+
         '<div class="pa-ed"><div class="k">EDGE</div><div class="v n">'+pts(p.edge)+'</div></div></div>'+
       '<div class="livebox" data-live="'+k+'">'+lvh+'</div>'+stats+
-      '<div class="pc-body">'+moveHtml(p)+nowHtml(p)+
+      '<div class="pc-body">'+(p.morningView?'':moveHtml(p))+nowHtml(p)+
         '<div class="flags">'+flags.join('')+'</div>'+scout(p)+
       '</div>'+
       '<div class="pc-foot">'+lk+'<button class="more" data-more="'+k+'">Full game log <i>▾</i></button></div>'+
@@ -890,7 +905,14 @@ var API = (function(){
     var h='<div class="ph"><h1><small>'+esc(dayLabel(d.today,{weekday:'long',month:'long',day:'numeric'}))+'</small>Tonight’s card</h1>'+
       '<div class="chips"><span class="chip"><b>'+tonight.length+'</b> play'+(tonight.length===1?'':'s')+'</span><span class="chip mint"><b>'+lockedN+'</b> locked</span>'+(pend.length?'<span class="chip amb">'+pend.length+' can still change'+(nextLock?' · next lock ~'+esc(nextLock):'')+'</span>':'')+
       '<span class="chip">Record <b class="n">'+wl(S)+'</b> <b class="n '+cls(S.units)+'">'+units(S.units)+'</b></span></div></div>'+
-      '<div class="bar">'+seg('list',LISTS,state.list,true)+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
+      '<div class="bar">'+seg('list',LISTS,state.list,true)+(state.list==='FORM'?seg('fmode',[['lock','At lock'],['morning','Morning']],state.fmode):'')+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
+    if(state.list==='FORM'&&state.fmode==='morning'){
+      var mo=d.formMorning||[],mw2=0,ml2=0,mu2=0;mo.forEach(function(p){if(p.outcome==='HIT')mw2++;else if(p.outcome==='MISS')ml2++;mu2+=p.units||0;});
+      var onL=mo.filter(function(p){return p.lockStatus==='ON'||p.lockStatus==='LOCKED';}).length;
+      h+='<p class="note2" style="margin:0 0 14px">'+(mo.length?'The frozen morning Form 6'+(mo[0].firstAt?', saved at '+esc(mo[0].firstAt):'')+' — the same method as the backtest, graded at these morning numbers. <b>'+onL+' of '+mo.length+'</b> are also on the lock list'+(mw2+ml2?' · tonight '+mw2+'–'+ml2+', '+units(Math.round(mu2*100)/100):'')+'.':'The morning Form 6 is saved once most of today’s games have odds posted. Check back later this morning.')+'</p>';
+      h+=mo.length?'<div class="cards r'+(mo.length%3)+(mo.length%2?' odd':'')+'">'+mo.map(function(p){return playCard(p,p.formRank);}).join('')+'</div>':'';
+      return h;
+    }
     h+=tonight.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(tonight.length%3)+(tonight.length%2?' odd':'')+'" id="cards">'+sorted.map(function(p){return playCard(p,rk[pkey(p)]);}).join('')+'</div>':
       '<div class="empty"><b>Nothing on this card yet.</b>Plays appear once today’s xEP tables are imported and the next automation run builds the board. Short slates make short cards.</div>';
     if(state.list==='FORM'){
@@ -926,7 +948,7 @@ var API = (function(){
     var d=state.data;
     if(date>=(d.recentSince||'')){
       cb({plays:d.recent.filter(function(p){return p.date===date;}),cooled:((d.watch||{}).recent||[]).concat((d.watch||{}).today||[]).filter(function(w){return w.date===date;}),
-        replay:(d.replayRecent||[]).filter(function(r){return r.date===date;})});return;
+        replay:(d.replayRecent||[]).filter(function(r){return r.date===date;}),formMorning:(d.formMorningRecent||[]).filter(function(r){return r.date===date;})});return;
     }
     if(state.days[date]){cb(state.days[date]);return;}
     cb(null);
@@ -981,14 +1003,21 @@ var API = (function(){
     var cw=cooled.filter(function(x){return x.outcome==='HIT';}).length,cl2=cooled.filter(function(x){return x.outcome==='MISS';}).length,cu=0;cooled.forEach(function(x){cu+=x.units||0;});
     var mw=morning.filter(function(x){return x.outcome==='HIT';}).length,ml=morning.filter(function(x){return x.outcome==='MISS';}).length,mu=0;morning.forEach(function(x){mu+=x.units||0;});
     var uu=Math.round(u*100)/100;
+    var fmo=fm?(data.formMorning||[]):[],fmKeys={},fmw=0,fml=0,fmu=0,fmSince=((((d.record||{}).lists||{}).FORM||{}).form||{}).since||'2026-11-05',fmBack=fm&&!fmo.length&&state.date<fmSince;
+    fmo.forEach(function(x){fmKeys[x.key]=1;if(x.outcome==='HIT')fmw++;else if(x.outcome==='MISS')fml++;fmu+=x.units||0;
+      x.why2=x.lockStatus==='LOCKED'?((x.lockOdds!=null&&(x.lockOdds!==x.odds||x.lockLine!==x.line))?'Also on the lock list, at '+x.lockLine+' '+odds(x.lockOdds):'Also on the lock list'):'Dropped before lock';});
+    if(fm&&fmo.length)plays.forEach(function(p){if(p.form&&!fmKeys[p.key])p.why2='Not on the morning list';});
+    fmu=Math.round(fmu*100)/100;
     h+='<div class="sbug"><div><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(state.every?'Every locked play':listName())+'</div>'+
       '<div><span class="big n">'+w+'–'+l+'</span><span class="ublk n '+(uu>0?'up':uu<0?'dn':'')+'">'+units(uu)+'</span></div>'+
       '<div class="pdots">'+plays.map(function(p){return '<i class="'+(p.outcome==='HIT'?'h':p.outcome==='MISS'?'m':p.outcome==='PUSH'?'p':'')+'" title="'+esc(p.player)+'"></i>';}).join('')+'</div></div>'+
       '<div><div class="k">Hit rate</div><div class="v n">'+(w+l?Math.round(w/(w+l)*100)+'%':'—')+'</div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+'</div></div>'+
       '<div><div class="k">Model cooled</div><div class="v n '+(cooled.length?cls(cu):'')+'">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
-      '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>';
+      (fm?'<div><div class="k">Morning Form 6</div><div class="v n '+(fmo.length?cls(fmu):'')+'">'+(fmo.length?fmw+'–'+fml:'—')+'</div><div class="s">'+(fmo.length?units(fmu)+' at morning numbers':fmBack?'backtest day · these are morning lines':'not saved that day')+'</div></div></div>':
+      '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>');
     var sp=plays.slice();if(state.rsort==='units')sp.sort(function(a,b){return (b.units==null?-99:b.units)-(a.units==null?-99:a.units);});else if(state.rsort==='edge')sp.sort(function(a,b){return (b.edge==null?-99:b.edge)-(a.edge==null?-99:a.edge);});
     h+='<section class="sec"><div class="sech"><h2>Locked plays</h2>'+(plays.length>1?'<span class="sortbox"><span class="sortlab">Sort</span>'+seg('rsort',[['rank','Rank'],['units','Units'],['edge','Edge']],state.rsort)+'</span>':'<span>What counted</span>')+'</div>'+(plays.length?'<div class="rlist">'+sp.map(resultRow).join('')+'</div>':'<div class="empty">No locked plays on this list that day.</div>')+'</section>';
+    if(fmo.length)h+='<section class="sec"><div class="sech"><h2>Morning Form 6</h2><span>Frozen'+(fmo[0].firstAt?' at '+esc(fmo[0].firstAt):'')+' · graded at the morning numbers · '+fmw+'–'+fml+', '+units(fmu)+'</span></div><div class="rlist">'+fmo.map(resultRow).join('')+'</div></section>';
     if(cooled.length)h+='<section class="sec"><details class="fold box" open><summary class="foldh"><h3>Model cooled · '+cooled.length+'</h3><span>On the card earlier, dropped before lock</span></summary>'+cooled.map(cooledRow).join('')+'</details></section>';
     if(morning.length||blocked.length)h+='<section class="sec"><details class="fold box"><summary class="foldh"><h3>Morning card (replay) · '+morning.length+'</h3><span>Today’s rules at that morning’s lines</span></summary>'+morning.map(resultRow).join('')+
       (blocked.length?'<div class="foldh" style="border-top:1px solid var(--line)"><h3 style="font-size:16px">Locked plays today’s rules would block</h3><span>'+blocked.length+'</span></div>'+blocked.map(resultRow).join(''):'')+'</details></section>';
@@ -1185,6 +1214,7 @@ var API = (function(){
     document.querySelectorAll('[data-rview]').forEach(function(b){b.onclick=function(){state.full=b.getAttribute('data-rview')==='full';state.ropen={};ls('ps_full',state.full?'1':'');render();};});
     document.querySelectorAll('[data-gn]').forEach(function(b){b.onclick=function(e){e.stopPropagation();state.gn=+b.getAttribute('data-gn');ls('ps_gn',String(state.gn));render();};});
     document.querySelectorAll('[data-rlist]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-rlist');if(v==='EVERY'){state.every=true;}else{state.every=false;state.list=v;ls('ps_list',v);}ls('ps_every',state.every?'1':'');render();};});
+    document.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){state.fmode=b.getAttribute('data-fmode');ls('ps_fmode',state.fmode);render();};});
     document.querySelectorAll('[data-psort]').forEach(function(b){b.onclick=function(){state.psort=b.getAttribute('data-psort');ls('ps_psort',state.psort);render();};});
     document.querySelectorAll('[data-rsort]').forEach(function(b){b.onclick=function(){state.rsort=b.getAttribute('data-rsort');ls('ps_rsort',state.rsort);render();};});
     document.querySelectorAll('[data-pera]').forEach(function(b){b.onclick=function(){state.pera=b.getAttribute('data-pera');ls('ps_pera',state.pera);render();};});
