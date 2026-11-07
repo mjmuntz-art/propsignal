@@ -1245,11 +1245,11 @@ var API = (function(){
   var liveAt=0,liveBusy=false;
   function liveTargets(){
     if(!state.data)return [];var now=Date.now();
-    return state.data.tonight.filter(function(p){if(!p.espnGameId||!p.espnId||!p.tipIso||p.outcome)return false;return Date.parse(p.tipIso)-now<10*60000&&now-Date.parse(p.tipIso)<5*3600000;});
+    return state.data.tonight.concat(state.data.formMorning||[]).filter(function(p){if(!p.espnGameId||!p.espnId||!p.tipIso||p.outcome)return false;return Date.parse(p.tipIso)-now<10*60000&&now-Date.parse(p.tipIso)<5*3600000;});
   }
   function paintLive(){
     if(state.view!=='tonight'||!state.data)return;
-    state.data.tonight.forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el){el.innerHTML=liveHtml(p);var pc=el.closest('.pc');if(pc)pc.classList.toggle('is-live',!!el.querySelector('.lv-bug'));}});
+    state.data.tonight.concat(state.data.formMorning||[]).forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el){el.innerHTML=liveHtml(p);var pc=el.closest('.pc');if(pc)pc.classList.toggle('is-live',!!el.querySelector('.lv-bug'));}});
   }
   function pollLive(force){
     var t=liveTargets();if(!t.length||liveBusy)return;
