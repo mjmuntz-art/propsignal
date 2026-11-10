@@ -1007,6 +1007,7 @@ var API = (function(){
     var uu=Math.round(u*100)/100;
     var othL={FORM:'FORMAM',FORMAM:'FORM',FORMT:'FORMAMT',FORMAMT:'FORMT'}[state.list]||'FORM',othN=baseL(state.list)==='FORM'?'Morning SIX':'Form SIX',othD=((d.days||[]).filter(function(x){return x.date===state.date;})[0]||{}).lists||{},oth=othD[othL]||null;
     if(fm)plays.forEach(function(p){if(p.inOther!=null&&!p.why2)p.why2=p.inOther?'Also on '+othN:'Not on '+othN;});
+    var bfDay=fm&&plays.some(function(p){return /^BACKFILL/.test(p.source||'');});
     h+='<div class="sbug"><div><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(state.every?'Every locked play':listName())+'</div>'+
       '<div><span class="big n">'+w+'–'+l+'</span><span class="ublk n '+(uu>0?'up':uu<0?'dn':'')+'">'+units(uu)+'</span></div>'+
       '<div class="pdots">'+plays.map(function(p){return '<i class="'+(p.outcome==='HIT'?'h':p.outcome==='MISS'?'m':p.outcome==='PUSH'?'p':'')+'" title="'+esc(p.player)+'"></i>';}).join('')+'</div></div>'+
@@ -1014,6 +1015,7 @@ var API = (function(){
       '<div><div class="k">Model cooled</div><div class="v n '+(cooled.length?cls(cu):'')+'">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
       (fm?'<div><div class="k">'+othN+'</div><div class="v n '+(oth&&oth.plays?cls(oth.units):'')+'">'+(oth&&oth.plays?oth.w+'–'+oth.l:'—')+'</div><div class="s">'+(oth&&oth.plays?units(oth.units)+' that day':'not tracked that day')+'</div></div></div>':
       '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>');
+    if(bfDay)h+='<p class="note2" style="margin:0 0 14px"><b>Backtest day.</b> This date is rebuilt from the calibration log, which only saved the morning lines, so Form SIX and Morning SIX show the same picks. The two lists split once live tracking began: 11/5 for All six, 11/10 for One per team.</p>';
     var sp=plays.slice();if(state.rsort==='units')sp.sort(function(a,b){return (b.units==null?-99:b.units)-(a.units==null?-99:a.units);});else if(state.rsort==='edge')sp.sort(function(a,b){return (b.edge==null?-99:b.edge)-(a.edge==null?-99:a.edge);});
     h+='<section class="sec"><div class="sech"><h2>Locked plays</h2>'+(plays.length>1?'<span class="sortbox"><span class="sortlab">Sort</span>'+seg('rsort',[['rank','Rank'],['units','Units'],['edge','Edge']],state.rsort)+'</span>':'<span>What counted</span>')+'</div>'+(plays.length?'<div class="rlist">'+sp.map(resultRow).join('')+'</div>':'<div class="empty">No locked plays on this list that day.</div>')+'</section>';
     if(cooled.length)h+='<section class="sec"><details class="fold box" open><summary class="foldh"><h3>Model cooled · '+cooled.length+'</h3><span>On the card earlier, dropped before lock</span></summary>'+cooled.map(cooledRow).join('')+'</details></section>';
