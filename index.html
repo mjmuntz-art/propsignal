@@ -75,6 +75,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 @media(max-width:640px){.sortbox.pso{margin-left:0;width:100%}.bar .search{width:100%}}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;padding:3px;background:var(--panel)}
 .seg button{border:0;background:none;color:var(--ink2);font-size:13px;font-weight:600;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
+@media(max-width:520px){.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}.seg button{font-size:12px;padding:7px 8px}}
 .seg button[aria-pressed="true"]{background:var(--panel3);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
 .seg.mint button[aria-pressed="true"]{background:var(--acc-bg);color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc-line)}
 .search{flex:1;min-width:170px;max-width:300px;padding:9px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--ink);font:inherit}
@@ -595,11 +596,16 @@ var API = (function(){
 (function(){
   var VIEWS=[['tonight','Tonight','M3 12l9-8 9 8M5 10v10h14V10'],['results','Results','M8 3v4M16 3v4M3 10h18M5 6h14v15H5z'],['players','Players','M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6'],['performance','Record','M4 19V9M10 19V5M16 19v-7M22 19H2'],['board','Board','M3 5h18M3 10h18M3 15h18M3 20h18']];
   var STAT={PTS:'pts',REB:'reb',AST:'ast','3PT':'3pm'};
-  var LISTS=[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form 6']];
+  var LISTS=[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX']];
+  function isF(l){return /^FORM/.test(l||'');}
+  function baseL(l){return l==='FORMT'?'FORM':l==='FORMAMT'?'FORMAM':l;}
+  function capOn(){return state.list==='FORMT'||state.list==='FORMAMT';}
+  function capSeg(){return isF(state.list)?seg('fcap',[['std','All six'],['team','One per team']],capOn()?'team':'std'):'';}
+  var LNAMES={FORMT:'Form SIX · 1 per team',FORMAMT:'Morning SIX · 1 per team'};
   var ERAS=[['current','Current rules'],['all','All-time'],['replay','Replay']];
   var state={data:null,view:'tonight',list:'ALL',era:'current',date:null,days:{},open:null,live:{games:{},players:{}},boardStat:'ALL',boardOnly:false,q:'',pq:'',sort:{k:'edge',d:-1},updating:false,entered:false,month:null,calOpen:false};
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
-  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var fmo=ls('ps_fmode');state.fmode=fmo==='morning'?'morning':'lock';var ps=ls('ps_psort');state.psort=/^(units|hit|plays|name)$/.test(ps||'')?ps:'units';var rs=ls('ps_rsort');state.rsort=/^(rank|units|edge)$/.test(rs||'')?rs:'rank';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
+  (function(){var v=ls('ps_view');if(v&&/^(tonight|results|players|performance|board)$/.test(v))state.view=v;var l=ls('ps_list');if(l&&/^(ALL|OVER|UNDER|FORM|FORMAM|FORMT|FORMAMT)$/.test(l))state.list=l;var e=ls('ps_era');if(e&&/^(current|all|replay)$/.test(e))state.era=e;state.calOpen=ls('ps_cal')==='1';state.every=ls('ps_every')==='1';state.gn=ls('ps_gn')==='10'?10:5;state.full=ls('ps_full')==='1';state.ropen={};var fmo=ls('ps_fmode2');state.fmode=fmo==='lock'?'lock':'official';var ps=ls('ps_psort');state.psort=/^(units|hit|plays|name)$/.test(ps||'')?ps:'units';var rs=ls('ps_rsort');state.rsort=/^(rank|units|edge)$/.test(rs||'')?rs:'rank';var pe=ls('ps_pera');state.pera=(pe==='current'||pe==='all')?pe:'all';})();
 
   // ---- formatting ----------------------------------------------------------
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -615,7 +621,7 @@ var API = (function(){
   function pickTxt(dir,line,stat){return (dir==='Over'?'Over ':'Under ')+(line==null?'—':line)+' '+(STAT[stat]||stat);}
   function hitOf(v,p){if(v==null||p.line==null)return '';if(v===p.line)return 'p';return (p.direction==='Over'?v>p.line:v<p.line)?'h':'m';}
   function onList(p){var L=state.list;if(p.lists&&p.lists.length)return p.lists.indexOf(L)!==-1;return L==='ALL'||String(p.direction||'').toUpperCase()===L;}
-  function listName(){for(var i=0;i<LISTS.length;i++)if(LISTS[i][0]===state.list)return LISTS[i][1];return 'All';}
+  function listName(){if(LNAMES[state.list])return LNAMES[state.list];for(var i=0;i<LISTS.length;i++)if(LISTS[i][0]===state.list)return LISTS[i][1];return 'All';}
   function pkey(p){return p.key||p.id||(p.player+p.stat+p.direction);}
   function seg(name,opts,cur,mint){return '<div class="seg'+(mint?' mint':'')+'" role="group">'+opts.map(function(o){return '<button data-'+name+'="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+o[1]+'</button>';}).join('')+'</div>';}
   var COURT='<svg class="court" viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#fff" stroke-width="2"><circle cx="330" cy="60" r="34"/><circle cx="330" cy="60" r="96"/><line x1="330" y1="-10" x2="330" y2="130"/><rect x="-20" y="22" width="110" height="76"/><circle cx="90" cy="60" r="26"/></svg>';
@@ -670,7 +676,7 @@ var API = (function(){
 
   // ---- tonight -------------------------------------------------------------
   function rankMap(list){
-    if(state.list==='FORM'){var rf={};list.slice().sort(function(a,b){return (a.formRank||99)-(b.formRank||99);}).forEach(function(p,i){rf[pkey(p)]=i+1;});return rf;}
+    if(isF(state.list)){var rf={};list.slice().sort(function(a,b){return (a.formRank||99)-(b.formRank||99);}).forEach(function(p,i){rf[pkey(p)]=i+1;});return rf;}
     var r={},sorted=list.slice().sort(function(a,b){var da=a.decision==='PLAY'?0:1,db=b.decision==='PLAY'?0:1;if(da!==db)return da-db;return (b.edge||0)-(a.edge||0);});
     sorted.forEach(function(p,i){r[pkey(p)]=i+1;});return r;
   }
@@ -753,7 +759,7 @@ var API = (function(){
     }
     return h+'</div></div></div>';
   }
-  // P42: Form 6 cards show the morning number and the price right now.
+  // P42: Form SIX cards show the morning number and the price right now.
   function nowHtml(p){
     if(p.morningView){
       var mj0=p.maxJuice==null?-130:p.maxJuice,bad0=p.nowOdds!=null&&p.nowOdds<mj0,lm=p.nowLine!=null&&p.nowLine!==p.line;
@@ -772,7 +778,7 @@ var API = (function(){
     var c=p.ctx||{},isVoid=p.outcome==='VOID',outNow=!isVoid&&/^(OUT|DOUBTFUL|INACTIVE|SUSPENDED)$/.test(p.status||'');
     var k=esc(pkey(p)),open=state.open===pkey(p);
     var g=state.live.games[p.espnGameId],isLive=g&&g.state==='in';
-    var badge=p.morningView&&!isVoid&&!isLive?'<span class="badge lock">MORNING'+(p.firstAt?' · '+esc(p.firstAt):'')+'</span>':isVoid?'<span class="badge out">VOID</span>':outNow?'<span class="badge out">'+esc(String(p.status))+' · WILL VOID</span>':
+    var badge=p.morningView&&!isVoid&&!outNow&&!isLive?'<span class="badge lock">LOCKED'+(p.firstAt?' '+esc(p.firstAt):'')+'</span>':isVoid?'<span class="badge out">VOID</span>':outNow?'<span class="badge out">'+esc(String(p.status))+' · WILL VOID</span>':
       isLive?'<span class="badge live"><i></i>LIVE</span>':p.locked?'<span class="badge lock">LOCKED '+esc(p.lockedAt||'')+'</span>':'<span class="badge open">LOCKS ~'+esc(p.locksAt||'')+'</span>';
     var rk=rank?'<span class="badge">#'+rank+' '+(state.list==='ALL'?'ALL':state.list==='OVER'?'OVER':'UNDER')+'</span>':'';
     var fm=form(p),proj=p.proj,gap=(proj!=null&&p.line!=null)?(p.direction==='Over'?proj-p.line:p.line-proj):null;
@@ -786,13 +792,12 @@ var API = (function(){
     function flag(t,cl){flags.push('<span class="flag'+(cl?' '+cl:'')+'">'+t+'</span>');}
     if(!p.form&&c.formSignal!=null)flag('Form signal <b>'+c.formSignal+'%</b>','good');
     if(p.form&&p.gapPct!=null)flag('Form gap <b>'+Math.round(p.gapPct*100)+'%</b>','good');
-    if(p.form&&!p.morningView&&p.morningPick===false)flag('Not on the morning list','warn');
-    if(p.form&&!p.morningView&&p.morningPick===true)flag('On the morning list','good');
-    if(p.morningView){var ls0=p.lockStatus;
-      if(ls0==='LOCKED')flag('Locked on the lock list'+(p.lockOdds!=null&&(p.lockOdds!==p.odds||p.lockLine!==p.line)?' at <b>'+p.lockLine+' '+odds(p.lockOdds)+'</b>':''),'good');
-      else if(ls0==='ON')flag('On the lock list for now','good');
-      else if(ls0==='DROPPED')flag('Dropped at lock','warn');
-      else if(ls0==='OFF')flag('Off the lock list for now','warn');}
+    if(p.form&&!p.morningView&&p.morningPick===true)flag('Also on Morning SIX');
+    if(p.replaces)flag('Replaces <b>'+esc(p.replaces)+'</b> (scratched)','good');
+    if(p.replacedBy)flag('Spot filled by <b>'+esc(p.replacedBy)+'</b>');
+    if(p.morningView&&!p.replacedBy){var ls0=p.lockStatus;
+      if(ls0==='LOCKED')flag('Also on Form SIX'+(p.lockOdds!=null&&(p.lockOdds!==p.odds||p.lockLine!==p.line)?' at <b>'+p.lockLine+' '+odds(p.lockOdds)+'</b>':''));
+      else if(ls0==='ON')flag('On Form SIX for now');}
     if(c.roleUp)flag('Role up: <b>'+esc(c.roleUp)+' out</b>','good');
     if(c.xepLine!=null&&p.line!=null&&c.xepLine!==p.line)flag('xEP line <b>'+c.xepLine+'</b>',(p.direction==='Over'?p.line<c.xepLine:p.line>c.xepLine)?'good':'warn');
     if(c.consensus!=null)flag('Market <b>'+c.consensus+'</b>');
@@ -801,7 +806,7 @@ var API = (function(){
     if(c.xepInjury)flag('xEP tag <b>'+esc(c.xepInjury)+'</b>','warn');
     if(p.lists&&p.lists.length)flag(esc(p.lists.map(function(l){return l==='ALL'?'All':l==='OVER'?'Overs':'Unders';}).join(' · ')));
     var lk=isVoid?'<span class="lk bad">Ruled out after lock · 0 units</span>':outNow?'<span class="lk bad">Listed '+esc(String(p.status).toLowerCase())+' · will void</span>':
-      p.morningView?'<span class="lk on">Morning list'+(p.locksAt&&p.lockStatus!=='LOCKED'&&p.lockStatus!=='DROPPED'?' · game locks ~'+esc(p.locksAt):'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':p.locked?'<span class="lk on">Locked '+esc(p.lockedAt||'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':'<span class="lk off">Can change until ~'+esc(p.locksAt||'lock')+'</span>';
+      p.morningView?'<span class="lk on">Morning SIX · locked '+esc(p.firstAt||'this morning')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':p.locked?'<span class="lk on">Locked '+esc(p.lockedAt||'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':'<span class="lk off">Can change until ~'+esc(p.locksAt||'lock')+'</span>';
     var ropen=state.full?state.ropen[pkey(p)]!==false:!!state.ropen[pkey(p)];
     var venue=venueOf(p),fm2=form(p),stl=STAT[p.stat]||p.stat;
     var stats='<div class="pa-st">'+
@@ -814,7 +819,7 @@ var API = (function(){
       '<div class="pa-top"><div class="pa-col">'+(p.teamLogo?'<img class="wm" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+
         (p.headshot?'<img class="hs" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':lchip(p.teamLogo,'mid'))+'</div>'+
       '<div class="pa-id">'+(p.headshot?lchip(p.teamLogo,'pa'):'')+
-        '<div class="pa-tags">'+(rank?'<span class="rk'+(p.form?' fm':'')+'">#'+rank+' '+(p.form?'FORM 6':state.list==='ALL'?'TOP '+(((state.data||{}).rules||{}).maxPlays||5):state.list==='OVER'?'OVERS':'UNDERS')+'</span>':'')+badge+'</div>'+
+        '<div class="pa-tags">'+(rank?'<span class="rk'+(p.form?' fm':'')+'">#'+rank+' '+(p.form?(p.morningView?'MORNING SIX':'FORM SIX'):state.list==='ALL'?'TOP '+(((state.data||{}).rules||{}).maxPlays||5):state.list==='OVER'?'OVERS':'UNDERS')+'</span>':'')+badge+'</div>'+
         '<div><div class="pa-nm">'+esc(p.player)+'</div><div class="pa-mt">'+esc(p.team)+(venue==='A'?' @ ':' vs ')+esc(p.opp)+(p.tip?' · '+esc(p.tip):'')+(venue?' · <b>'+(venue==='A'?'Away':'Home')+'</b>':'')+'</div></div></div></div>'+
       '<div class="pa-bar"><div class="pa-pk"><span class="d '+(p.direction==='Over'?'over':'under')+'">'+(p.direction==='Over'?'OVER':'UNDER')+'</span><span class="n">'+(p.line==null?'—':p.line)+'</span><small>'+esc(stl)+'</small></div>'+
         '<div class="pa-pr"><b class="n">'+odds(p.odds)+'</b><em>'+esc(p.book||'')+'<br>'+(isVoid?'VOID':p.form?'Form · model '+esc((p.modelDecision||'PASS').toLowerCase()):esc(p.decision||''))+(p.grade?' · '+esc(p.grade):'')+'</em></div>'+
@@ -905,21 +910,18 @@ var API = (function(){
     var h='<div class="ph"><h1><small>'+esc(dayLabel(d.today,{weekday:'long',month:'long',day:'numeric'}))+'</small>Tonight’s card</h1>'+
       '<div class="chips"><span class="chip"><b>'+tonight.length+'</b> play'+(tonight.length===1?'':'s')+'</span><span class="chip mint"><b>'+lockedN+'</b> locked</span>'+(pend.length?'<span class="chip amb">'+pend.length+' can still change'+(nextLock?' · next lock ~'+esc(nextLock):'')+'</span>':'')+
       '<span class="chip">Record <b class="n">'+wl(S)+'</b> <b class="n '+cls(S.units)+'">'+units(S.units)+'</b></span></div></div>'+
-      '<div class="bar">'+seg('list',LISTS,state.list,true)+(state.list==='FORM'?seg('fmode',[['lock','At lock'],['morning','Morning']],state.fmode):'')+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
-    if(state.list==='FORM'&&state.fmode==='morning'){
-      var mo=d.formMorning||[],mw2=0,ml2=0,mu2=0;mo.forEach(function(p){if(p.outcome==='HIT')mw2++;else if(p.outcome==='MISS')ml2++;mu2+=p.units||0;});
-      var onL=mo.filter(function(p){return p.lockStatus==='ON'||p.lockStatus==='LOCKED';}).length;
-      h+='<p class="note2" style="margin:0 0 14px">'+(mo.length?'The frozen morning Form 6'+(mo[0].firstAt?', saved at '+esc(mo[0].firstAt):'')+' — the same method as the backtest, graded at these morning numbers. <b>'+onL+' of '+mo.length+'</b> are also on the lock list'+(mw2+ml2?' · tonight '+mw2+'–'+ml2+', '+units(Math.round(mu2*100)/100):'')+'.':'The morning Form 6 is saved once most of today’s games have odds posted. Check back later this morning.')+'</p>';
-      h+=mo.length?'<div class="cards r'+(mo.length%3)+(mo.length%2?' odd':'')+'">'+mo.map(function(p){return playCard(p,p.formRank);}).join('')+'</div>':'';
-      return h;
-    }
+      '<div class="bar">'+seg('list',LISTS,baseL(state.list),true)+capSeg()+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
+    var tcN=capOn()?' Capped at one play per team; the next-best prop from another team fills the spot.':'';
+    if(baseL(state.list)==='FORMAM'){var off0=tonight.filter(function(p){return p.morningView;});
+      h+='<p class="note2" style="margin:0 0 14px">'+(off0.length?'Morning SIX: the Form SIX rules run once'+(off0[0].firstAt?' at '+esc(off0[0].firstAt):'')+' this morning, frozen and graded at these morning numbers, the way the backtest was.'+(capOn()?'':' A scratch is filled by the next reserve.')+tcN+' Current prices are on each card.':'The Morning SIX is saved once most of today’s games have odds posted, usually late morning.')+'</p>';}
+    if(baseL(state.list)==='FORM')h+='<p class="note2" style="margin:0 0 14px">Form SIX: picks lock game by game at the same time as the main card, after injury news, and are graded at the lock numbers.'+tcN+'</p>';
     h+=tonight.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(tonight.length%3)+(tonight.length%2?' odd':'')+'" id="cards">'+sorted.map(function(p){return playCard(p,rk[pkey(p)]);}).join('')+'</div>':
       '<div class="empty"><b>Nothing on this card yet.</b>Plays appear once today’s xEP tables are imported and the next automation run builds the board. Short slates make short cards.</div>';
-    if(state.list==='FORM'){
-      var dk=d.formDeck||[],fr=d.formRules||{};
-      h+='<section class="sec"><details class="fold box"'+(dk.length?' open':'')+'><summary class="foldh"><h3>On deck · '+dk.length+'</h3><span>Signal props waiting on price or an open slot</span></summary>'+
+    if(isF(state.list)){
+      var am=baseL(state.list)==='FORMAM',dk=(capOn()?[]:(am?d.formReserves:d.formDeck))||[],fr=d.formRules||{};
+      h+='<section class="sec"><details class="fold box"'+(dk.length?' open':'')+'><summary class="foldh"><h3>'+(am?'Reserves':'On deck')+' · '+dk.length+'</h3><span>'+(am?'Next in this morning’s ranking — one fills a spot only if a player is scratched':'Signal props waiting on price or an open slot')+'</span></summary>'+
         (dk.length?dk.map(function(x){return '<div class="mini" style="padding:9px 14px"><span><b>'+esc(x.player)+'</b> · '+esc(pickTxt(x.direction,x.line,x.stat))+' <span class="dim">'+odds(x.odds)+' '+esc(x.book||'')+' · gap '+Math.round((x.gapPct||0)*100)+'%</span></span><span class="amb" style="font-weight:600">'+esc(x.why||'')+'</span></div>';}).join(''):'<div class="note2" style="padding:12px 14px">No other signal props right now.</div>')+'</details></section>';
-      h+='<p class="foot">Form 6: trimmed L10 at least '+Math.round((fr.gap||.2)*100)+'% past the line (overs also need rising or falling minutes), odds '+odds(fr.maxJuice||-130)+' or better. Ranked by best price, then projected minutes, model edge and form gap; one per player. Locks game by game with the main card; a scratch voids and opens the slot. Separate from the model’s card.</p>';
+      h+='<p class="foot">'+(am?'Morning SIX':'Form SIX')+': trimmed L10 at least '+Math.round((fr.gap||.2)*100)+'% past the line (overs also need rising or falling minutes), odds '+odds(fr.maxJuice||-130)+' or better. Ranked by best price, then projected minutes, model edge and form gap; one per player. '+(am?'Locks once in the morning and is graded at the morning numbers; a scratch voids and the next reserve fills the spot.':'Locks game by game with the main card; a scratch voids and opens the slot.')+' Separate from the model’s card.</p>';
       return h;
     }
     h+='<section class="sec"><details class="fold box"'+(watch.length?' open':'')+'><summary class="foldh"><h3>Model cooled · '+watch.length+'</h3><span>Left the card before lock'+(d.watch&&d.watch.record&&d.watch.record.plays?' · season '+wl(d.watch.record)+', '+units(d.watch.record.units):'')+'</span></summary>'+
@@ -948,7 +950,7 @@ var API = (function(){
     var d=state.data;
     if(date>=(d.recentSince||'')){
       cb({plays:d.recent.filter(function(p){return p.date===date;}),cooled:((d.watch||{}).recent||[]).concat((d.watch||{}).today||[]).filter(function(w){return w.date===date;}),
-        replay:(d.replayRecent||[]).filter(function(r){return r.date===date;}),formMorning:(d.formMorningRecent||[]).filter(function(r){return r.date===date;})});return;
+        replay:(d.replayRecent||[]).filter(function(r){return r.date===date;}),formCompare:(d.formCompareRecent||[]).filter(function(r){return r.date===date;})});return;
     }
     if(state.days[date]){cb(state.days[date]);return;}
     cb(null);
@@ -989,7 +991,7 @@ var API = (function(){
       var p=x.date.split('-'),dt=new Date(+p[0],+p[1]-1,+p[2]);
       return '<button class="day2 '+cl+'" data-date="'+x.date+'" aria-pressed="'+(state.date===x.date)+'"><span class="t"><span class="dw">'+dt.toLocaleDateString(undefined,{weekday:'short'})+'</span><span class="dd n">'+dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</span></span><span class="b n">'+(r.plays?wl(r):'—')+'</span></button>';
     }).join('');
-    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top '+(((state.data||{}).rules||{}).maxPlays||5)],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form 6'],['EVERY','Every play']],state.every?'EVERY':state.list,true)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top '+(((state.data||{}).rules||{}).maxPlays||5)],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX'],['EVERY','Every play']],state.every?'EVERY':baseL(state.list),true)+(state.every?'':capSeg())+'</div></div>'+
       (days.length?'<div class="rail" id="rail">'+rail+'</div>':'')+monthView(d)+
       '<div class="bar"><label class="pickdate">Jump to a date <input type="date" id="pickdate" value="'+esc(state.date||'')+'" max="'+esc(d.today||'')+'"></label></div>';
     if(!state.date)return h+'<div class="empty"><b>No graded plays yet.</b>Plays are graded automatically after their games finish, usually by the next morning.</div>';
@@ -997,27 +999,23 @@ var API = (function(){
     if(!data)return h+'<div class="loading">Loading '+esc(dayLabel(state.date))+'…</div>';
     var plays=data.plays.filter(function(p){return state.every?!p.form:onList(p);}),graded=plays.filter(function(p){return ['HIT','MISS','PUSH','DNP','VOID'].indexOf(p.outcome)!==-1;});
     var w=graded.filter(function(p){return p.outcome==='HIT';}).length,l=graded.filter(function(p){return p.outcome==='MISS';}).length,u=0;graded.forEach(function(p){u+=p.units||0;});
-    var cooled=(data.cooled||[]).filter(function(x){if(state.list==='FORM'&&!state.every)return false;return state.every||state.list==='ALL'||!x.firstLists||!x.firstLists.length||x.firstLists.indexOf(state.list)!==-1;});
-    var fm=state.list==='FORM'&&!state.every;
+    var cooled=(data.cooled||[]).filter(function(x){if(isF(state.list)&&!state.every)return false;return state.every||state.list==='ALL'||!x.firstLists||!x.firstLists.length||x.firstLists.indexOf(state.list)!==-1;});
+    var fm=isF(state.list)&&!state.every;
     var morning=fm?[]:(data.replay||[]).filter(function(r){return !r.blocked&&(state.every||onList(r));}),blocked=fm?[]:(data.replay||[]).filter(function(r){return r.blocked;});
     var cw=cooled.filter(function(x){return x.outcome==='HIT';}).length,cl2=cooled.filter(function(x){return x.outcome==='MISS';}).length,cu=0;cooled.forEach(function(x){cu+=x.units||0;});
     var mw=morning.filter(function(x){return x.outcome==='HIT';}).length,ml=morning.filter(function(x){return x.outcome==='MISS';}).length,mu=0;morning.forEach(function(x){mu+=x.units||0;});
     var uu=Math.round(u*100)/100;
-    var fmo=fm?(data.formMorning||[]):[],fmKeys={},fmw=0,fml=0,fmu=0,fmSince=((((d.record||{}).lists||{}).FORM||{}).form||{}).since||'2026-11-05',fmBack=fm&&!fmo.length&&state.date<fmSince;
-    fmo.forEach(function(x){fmKeys[x.key]=1;if(x.outcome==='HIT')fmw++;else if(x.outcome==='MISS')fml++;fmu+=x.units||0;
-      x.why2=x.lockStatus==='LOCKED'?((x.lockOdds!=null&&(x.lockOdds!==x.odds||x.lockLine!==x.line))?'Also on the lock list, at '+x.lockLine+' '+odds(x.lockOdds):'Also on the lock list'):'Dropped before lock';});
-    if(fm&&fmo.length)plays.forEach(function(p){if(p.form&&!fmKeys[p.key])p.why2='Not on the morning list';});
-    fmu=Math.round(fmu*100)/100;
+    var othL={FORM:'FORMAM',FORMAM:'FORM',FORMT:'FORMAMT',FORMAMT:'FORMT'}[state.list]||'FORM',othN=baseL(state.list)==='FORM'?'Morning SIX':'Form SIX',othD=((d.days||[]).filter(function(x){return x.date===state.date;})[0]||{}).lists||{},oth=othD[othL]||null;
+    if(fm)plays.forEach(function(p){if(p.inOther!=null&&!p.why2)p.why2=p.inOther?'Also on '+othN:'Not on '+othN;});
     h+='<div class="sbug"><div><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(state.every?'Every locked play':listName())+'</div>'+
       '<div><span class="big n">'+w+'–'+l+'</span><span class="ublk n '+(uu>0?'up':uu<0?'dn':'')+'">'+units(uu)+'</span></div>'+
       '<div class="pdots">'+plays.map(function(p){return '<i class="'+(p.outcome==='HIT'?'h':p.outcome==='MISS'?'m':p.outcome==='PUSH'?'p':'')+'" title="'+esc(p.player)+'"></i>';}).join('')+'</div></div>'+
       '<div><div class="k">Hit rate</div><div class="v n">'+(w+l?Math.round(w/(w+l)*100)+'%':'—')+'</div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+'</div></div>'+
       '<div><div class="k">Model cooled</div><div class="v n '+(cooled.length?cls(cu):'')+'">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
-      (fm?'<div><div class="k">Morning Form 6</div><div class="v n '+(fmo.length?cls(fmu):'')+'">'+(fmo.length?fmw+'–'+fml:'—')+'</div><div class="s">'+(fmo.length?units(fmu)+' at morning numbers':fmBack?'backtest day · these are morning lines':'not saved that day')+'</div></div></div>':
+      (fm?'<div><div class="k">'+othN+'</div><div class="v n '+(oth&&oth.plays?cls(oth.units):'')+'">'+(oth&&oth.plays?oth.w+'–'+oth.l:'—')+'</div><div class="s">'+(oth&&oth.plays?units(oth.units)+' that day':'not tracked that day')+'</div></div></div>':
       '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>');
     var sp=plays.slice();if(state.rsort==='units')sp.sort(function(a,b){return (b.units==null?-99:b.units)-(a.units==null?-99:a.units);});else if(state.rsort==='edge')sp.sort(function(a,b){return (b.edge==null?-99:b.edge)-(a.edge==null?-99:a.edge);});
     h+='<section class="sec"><div class="sech"><h2>Locked plays</h2>'+(plays.length>1?'<span class="sortbox"><span class="sortlab">Sort</span>'+seg('rsort',[['rank','Rank'],['units','Units'],['edge','Edge']],state.rsort)+'</span>':'<span>What counted</span>')+'</div>'+(plays.length?'<div class="rlist">'+sp.map(resultRow).join('')+'</div>':'<div class="empty">No locked plays on this list that day.</div>')+'</section>';
-    if(fmo.length)h+='<section class="sec"><div class="sech"><h2>Morning Form 6</h2><span>Frozen'+(fmo[0].firstAt?' at '+esc(fmo[0].firstAt):'')+' · graded at the morning numbers · '+fmw+'–'+fml+', '+units(fmu)+'</span></div><div class="rlist">'+fmo.map(resultRow).join('')+'</div></section>';
     if(cooled.length)h+='<section class="sec"><details class="fold box" open><summary class="foldh"><h3>Model cooled · '+cooled.length+'</h3><span>On the card earlier, dropped before lock</span></summary>'+cooled.map(cooledRow).join('')+'</details></section>';
     if(morning.length||blocked.length)h+='<section class="sec"><details class="fold box"><summary class="foldh"><h3>Morning card (replay) · '+morning.length+'</h3><span>Today’s rules at that morning’s lines</span></summary>'+morning.map(resultRow).join('')+
       (blocked.length?'<div class="foldh" style="border-top:1px solid var(--line)"><h3 style="font-size:16px">Locked plays today’s rules would block</h3><span>'+blocked.length+'</span></div>'+blocked.map(resultRow).join(''):'')+'</details></section>';
@@ -1027,9 +1025,9 @@ var API = (function(){
   // ---- players -------------------------------------------------------------
   function viewPlayers(d){
     var era=state.pera||'all';
-    var E=(d.record.eras||{})[era]||{},P=(state.list==='FORM'?(E.playersForm||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||state.list==='FORM'||p.lists[state.list];});
+    var E=(d.record.eras||{})[era]||{},P=(isF(state.list)?(E[{FORM:'playersForm',FORMAM:'playersFormAM',FORMT:'playersFormT',FORMAMT:'playersFormAMT'}[state.list]]||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||isF(state.list)||p.lists[state.list];});
     if(state.pq)P=P.filter(function(p){return (p.player+' '+p.team).toLowerCase().indexOf(state.pq)!==-1;});
-    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form 6']],state.list,true)+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX']],baseL(state.list),true)+capSeg()+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
       '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"><span class="sortbox pso"><span class="sortlab">Sort</span>'+seg('psort',[['units','Units'],['hit','Hit rate'],['plays','Plays'],['name','A–Z']],state.psort)+'</span></div>';
     var rOf=function(p){return state.list==='ALL'?p.record:(p.lists[state.list]||p.record);};
     P=P.slice().sort(function(a,b){var ra=rOf(a),rb=rOf(b);
@@ -1040,12 +1038,12 @@ var API = (function(){
     if(!P.length)return h+'<div class="empty"><b>No players yet for this view.</b>'+(era==='current'?'Current rules only counts plays since the last ModelVersion change. Switch to All-time to see everyone.':'Each player who makes a locked card gets a running record here.')+'</div>';
     return h+'<div class="pgrid r'+(P.length%3)+(P.length%2?' odd':'')+'">'+P.map(function(p){
       var r=state.list==='ALL'?p.record:(p.lists[state.list]||p.record);
-      var mine=(p.last||[]).filter(function(x){return state.list==='ALL'||state.list==='FORM'||(x.lists||[]).indexOf(state.list)!==-1;});
+      var mine=(p.last||[]).filter(function(x){return state.list==='ALL'||isF(state.list)||(x.lists||[]).indexOf(state.list)!==-1;});
       var open=state.popen===p.playerId;
       var stats={};mine.forEach(function(x){var k=(STAT[x.stat]||x.stat)+' '+(x.direction==='Over'?'overs':'unders');var o=stats[k]=stats[k]||{w:0,l:0};if(x.outcome==='HIT')o.w++;else if(x.outcome==='MISS')o.l++;});
       var log='<div class="plog">'+(Object.keys(stats).length>1?'<div class="sum">'+Object.keys(stats).map(function(k){return '<span class="flag">'+esc(k)+' <b>'+stats[k].w+'–'+stats[k].l+'</b></span>';}).join('')+'</div>':'')+
         mine.map(function(x){
-          var lt=state.list==='FORM'?'Form 6':(x.lists||[]).map(function(l){return l==='ALL'?'Top '+(((state.data||{}).rules||{}).maxPlays||5):l==='OVER'?'Overs':'Unders';}).join(' · ');
+          var lt=isF(state.list)?listName():(x.lists||[]).map(function(l){return l==='ALL'?'Top '+(((state.data||{}).rules||{}).maxPlays||5):l==='OVER'?'Overs':'Unders';}).join(' · ');
           return '<div class="pl"><span class="dt">'+esc(dayLabel(x.date,{month:'short',day:'numeric'}))+'</span>'+
             '<div><div class="pk">'+esc(pickTxt(x.direction,x.line,x.stat))+(x.opp?' <span class="ds">vs '+esc(x.opp)+'</span>':'')+'</div><div class="ds">'+(x.odds!=null?odds(x.odds)+' '+esc(x.book||'')+' · ':'')+(x.edge!=null?'edge '+pts(x.edge)+' · ':'')+(x.grade?esc(x.grade)+' · ':'')+esc(lt)+'</div></div>'+
             '<span class="act n">'+(x.actual==null?'—':x.actual)+'</span>'+
@@ -1126,10 +1124,10 @@ var API = (function(){
   }
   function viewPerformance(d){
     var eras=d.record.eras||{},E=eras[state.era]||{},R=(E.lists&&E.lists[state.list])||d.record,S=R.season||{},L7=R.last7||{};
-    var FM=state.list==='FORM'&&R.form;
-    var note=FM?('Form 6 · separate from the model. '+(R.form.backtest&&R.form.backtest.plays?'Backtest (morning lines, through 11/4): '+wl(R.form.backtest)+', '+units(R.form.backtest.units)+'. ':'')+'Live since 11/5: '+wl(R.form.live)+', '+units((R.form.live||{}).units)+'.'+(R.form.morning&&R.form.morning.plays?' Morning list (comparison only): '+wl(R.form.morning)+', '+units(R.form.morning.units)+'.':'')):state.era==='current'?'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh when ModelVersion changes.':state.era==='all'?'Every real play since tracking began.':
+    var FM=isF(state.list)&&R.form;
+    var note=FM?(listName()+' · separate from the model. '+(R.form.backtest&&R.form.backtest.plays?'Backtest (morning lines, 10/27–11/4): '+wl(R.form.backtest)+', '+units(R.form.backtest.units)+'. ':'')+'Live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/5')+' ('+(baseL(state.list)==='FORMAM'?'frozen each morning':'locked at game time')+(capOn()?', one per team':'')+'): '+wl(R.form.live)+', '+units((R.form.live||{}).units)+'.'):state.era==='current'?'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh when ModelVersion changes.':state.era==='all'?'Every real play since tracking began.':
       'Not real plays: today’s rules replayed on each graded slate at that morning’s lines.'+(E.blockedCount?' Real plays these rules would have blocked: '+E.blockedCount+' ('+wl(E.blocked)+', '+units((E.blocked||{}).units)+').':'');
-    var h='<div class="ph"><h1><small>'+esc(listName())+' · flat 1 unit</small>Record</h1><div class="chips">'+seg('era',ERAS,state.era)+seg('list',LISTS,state.list,true)+'</div></div>'+
+    var h='<div class="ph"><h1><small>'+esc(listName())+' · flat 1 unit</small>Record</h1><div class="chips">'+seg('era',ERAS,state.era)+seg('list',LISTS,baseL(state.list),true)+capSeg()+'</div></div>'+
       (function(){
         var X0=R.extras||{},st=X0.streaks||{},C0=R.clv||{},bc=(C0.lock&&C0.lock.n?C0.lock:C0.morning)||{};
         var luck='';if(S.expN){var mx=Math.max(S.expN,1),df=S.w-S.exp;luck='<div class="luck2"><div class="k">Luck meter · '+S.w+' won vs '+S.exp.toFixed(1)+' expected</div><div class="lk2"><i style="width:'+(S.exp/mx*100).toFixed(1)+'%"></i><em style="left:'+(S.w/mx*100).toFixed(1)+'%;background:'+(df>=0?'var(--mint)':'var(--neg)')+'"></em></div><div class="s" style="margin-top:6px">'+(Math.abs(df)<0.75?'Right on what the model expected':'<b class="'+(df>0?'pos':'neg')+'">'+Math.abs(df).toFixed(1)+' wins '+(df>0?'above':'below')+'</b> what the model expected')+'</div></div>';}
@@ -1140,8 +1138,8 @@ var API = (function(){
       })();
     var T=E.topRanked||(eras.all||{}).topRanked;
     var topLn=function(p){var o=p.outcome;return '<div class="ln" style="'+tv(p.team)+'">'+tcolHtml(p)+'<div style="min-width:0"><div class="caps nm">'+esc(p.player)+'</div><div class="s">'+esc(pickTxt(p.direction,p.line,p.stat))+' · '+esc(dayLabel(p.date,{month:'short',day:'numeric'}))+(p.actual!=null?' · '+p.actual:'')+'</div></div><span class="ob '+(o==='HIT'?'h':o==='MISS'?'m':o==='PUSH'?'p':'')+'">'+esc(o||'OPEN')+'</span></div>';};
-    if(T&&state.list==='FORM'){var xf=T.FORM||{record:{},days:[]},rf=xf.record||{},df=(xf.days||[]).slice(0,9),df=df.length>=3?df.slice(0,df.length-df.length%3):df,cols=[[],[],[]];df.forEach(function(p,i){cols[i%3].push(p);});
-      h+='<section class="sec"><div class="sech"><h2>The #1 Form 6 play each day</h2><span class="n">'+wl(rf)+' · <span class="'+cls(rf.units)+'">'+units(rf.units)+'</span></span></div>'+(df.length?'<div class="g3">'+cols.map(function(c){return '<div class="top2">'+c.map(topLn).join('')+'</div>';}).join('')+'</div>':'<div class="top2"><div class="ln"><span></span><div class="s">No graded days yet.</div><span></span></div></div>')+'</section>';T=null;}
+    if(T&&isF(state.list)){var xf=T[state.list]||{record:{},days:[]},rf=xf.record||{},df=(xf.days||[]).slice(0,9),df=df.length>=3?df.slice(0,df.length-df.length%3):df,cols=[[],[],[]];df.forEach(function(p,i){cols[i%3].push(p);});
+      h+='<section class="sec"><div class="sech"><h2>The #1 '+listName()+' play each day</h2><span class="n">'+wl(rf)+' · <span class="'+cls(rf.units)+'">'+units(rf.units)+'</span></span></div>'+(df.length?'<div class="g3">'+cols.map(function(c){return '<div class="top2">'+c.map(topLn).join('')+'</div>';}).join('')+'</div>':'<div class="top2"><div class="ln"><span></span><div class="s">No graded days yet.</div><span></span></div></div>')+'</section>';T=null;}
     if(T){h+='<section class="sec"><div class="sech"><h2>The #1 play each day</h2><span>Highest-ranked locked play on each list</span></div><div class="g3">'+['ALL','OVER','UNDER'].map(function(L){
       var x=T[L]||{record:{},days:[]},r=x.record||{};
       return '<div class="top2"><div class="hd"><span class="caps">'+(L==='ALL'?'#1 overall':L==='OVER'?'#1 over':'#1 under')+'</span><span class="rec n">'+wl(r)+' <span class="'+cls(r.units)+'" style="font-size:17px">'+units(r.units)+'</span></span></div>'+
@@ -1158,7 +1156,7 @@ var API = (function(){
         '<div class="card"><h3>Edge record</h3><p class="note">Bigger edges should win more if the edge means anything. The gold tick is the hit rate the model expected for that band.</p>'+legend(true)+splitRows(R.byEdge,true)+'</div></div></section>';}
     h+='<section class="sec"><div class="g2"><div class="card"><h3>By rank on the card</h3><p class="note">Do the #1–#2 plays carry the card, or do #4–#5 hold their own? If the bottom of the card loses, a shorter card is better.</p>'+splitRows(X.byRank,true)+'</div>'+
       '<div class="card"><h3>By price</h3><p class="note">Plays are allowed down to −130. If the −116 to −130 band loses, tighten the price limit.</p>'+splitRows(X.byOdds,true)+'</div></div></section>';
-    if(state.list!=='FORM'){h+=shadowBlock(d.shadow);h+=guardBlock(d.guards);}
+    if(!isF(state.list)){h+=shadowBlock(d.shadow);h+=guardBlock(d.guards);}
     h+='<section class="sec"><div class="g2"><div class="card"><h3>Over vs under</h3>'+legend(true)+splitRows(R.byDirection,true)+'</div><div class="card"><h3>By stat</h3><p class="note">Which markets are winning.</p>'+splitRows(R.byStat,true)+'</div>'+
       '<div class="card"><h3>By xEP grade</h3><p class="note">Plays only come from A+, A and A−.</p>'+splitRows(R.byGrade,true)+'</div><div class="card"><h3>Play vs lean</h3><p class="note">Plays need 10+ pts of edge, leans 6+.</p>'+splitRows(R.byDecision,true)+'</div></div></section>';
     var Cal=d.calibration||{};
@@ -1173,7 +1171,7 @@ var API = (function(){
   }
   function callPill(r){
     var d=r.decision,why=String(r.reason||'');
-    var ftag=r.formPick?' <span class="pill F">FORM 6</span>':r.form!=null?' <span class="pill Fs">FORM '+r.form+'%</span>':'';
+    var ftag=r.formPick?' <span class="pill F">FORM SIX</span>':r.form!=null?' <span class="pill Fs">FORM '+r.form+'%</span>':'';
     return callPill0(r,d,why)+ftag;
   }
   function callPill0(r,d,why){
@@ -1209,12 +1207,14 @@ var API = (function(){
   function go(v){state.view=v;ls('ps_view',v);render();window.scrollTo(0,0);}
   function wire(){
     document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.getAttribute('data-go'));};});
-    document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){state.list=b.getAttribute('data-list');ls('ps_list',state.list);state.open=null;render();};});
+    document.querySelectorAll('[data-fcap]').forEach(function(b){b.onclick=function(){state.list=baseL(state.list)+(b.getAttribute('data-fcap')==='team'?'T':'');ls('ps_list',state.list);state.open=null;render();};});
+    document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){var v0=b.getAttribute('data-list');state.list=isF(v0)&&capOn()?v0+'T':v0;ls('ps_list',state.list);state.open=null;render();};});
+    if(0)document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){state.list=b.getAttribute('data-list');ls('ps_list',state.list);state.open=null;render();};});
     document.querySelectorAll('[data-r].rbtn').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-r'),c=b.closest('.pc'),o=c.getAttribute('data-r')!=='true';c.setAttribute('data-r',o);state.ropen[k]=o;b.firstChild.nodeValue=o?'Hide research ':'Show research ';};});
     document.querySelectorAll('[data-rview]').forEach(function(b){b.onclick=function(){state.full=b.getAttribute('data-rview')==='full';state.ropen={};ls('ps_full',state.full?'1':'');render();};});
     document.querySelectorAll('[data-gn]').forEach(function(b){b.onclick=function(e){e.stopPropagation();state.gn=+b.getAttribute('data-gn');ls('ps_gn',String(state.gn));render();};});
-    document.querySelectorAll('[data-rlist]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-rlist');if(v==='EVERY'){state.every=true;}else{state.every=false;state.list=v;ls('ps_list',v);}ls('ps_every',state.every?'1':'');render();};});
-    document.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){state.fmode=b.getAttribute('data-fmode');ls('ps_fmode',state.fmode);render();};});
+    document.querySelectorAll('[data-rlist]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-rlist');if(v==='EVERY'){state.every=true;}else{state.every=false;state.list=isF(v)&&capOn()?v+'T':v;ls('ps_list',state.list);}ls('ps_every',state.every?'1':'');render();};});
+    document.querySelectorAll('[data-fmode]').forEach(function(b){b.onclick=function(){state.fmode=b.getAttribute('data-fmode');ls('ps_fmode2',state.fmode);render();};});
     document.querySelectorAll('[data-psort]').forEach(function(b){b.onclick=function(){state.psort=b.getAttribute('data-psort');ls('ps_psort',state.psort);render();};});
     document.querySelectorAll('[data-rsort]').forEach(function(b){b.onclick=function(){state.rsort=b.getAttribute('data-rsort');ls('ps_rsort',state.rsort);render();};});
     document.querySelectorAll('[data-pera]').forEach(function(b){b.onclick=function(){state.pera=b.getAttribute('data-pera');ls('ps_pera',state.pera);render();};});
@@ -1229,7 +1229,7 @@ var API = (function(){
       var k=b.getAttribute('data-more'),el=b.closest('.pc'),open=el.getAttribute('data-open')!=='true';
       document.querySelectorAll('.pc[data-open="true"]').forEach(function(o){if(o!==el)o.setAttribute('data-open','false');});
       state.open=open?k:null;el.setAttribute('data-open',open);
-      if(open){var p=state.data.tonight.filter(function(x){return pkey(x)===k;})[0];if(p)el.querySelector('.detail').innerHTML=detail(p);}
+      if(open){var pool=state.data.tonight.filter(function(x){return onList(x);}).concat(state.data.tonight);var p=pool.filter(function(x){return pkey(x)===k;})[0];if(p)el.querySelector('.detail').innerHTML=detail(p);}
     };});
     var pq=document.getElementById('pq');if(pq)pq.oninput=function(){state.pq=pq.value.toLowerCase();var pos=pq.selectionStart;render();var n=document.getElementById('pq');if(n){n.focus();n.setSelectionRange(pos,pos);}};
     document.querySelectorAll('[data-stat]').forEach(function(b){b.onclick=function(){state.boardStat=b.getAttribute('data-stat');render();};});
@@ -1245,11 +1245,11 @@ var API = (function(){
   var liveAt=0,liveBusy=false;
   function liveTargets(){
     if(!state.data)return [];var now=Date.now();
-    return state.data.tonight.concat(state.data.formMorning||[]).filter(function(p){if(!p.espnGameId||!p.espnId||!p.tipIso||p.outcome)return false;return Date.parse(p.tipIso)-now<10*60000&&now-Date.parse(p.tipIso)<5*3600000;});
+    return state.data.tonight.concat(state.data.formCompare||[]).filter(function(p){if(!p.espnGameId||!p.espnId||!p.tipIso||p.outcome)return false;return Date.parse(p.tipIso)-now<10*60000&&now-Date.parse(p.tipIso)<5*3600000;});
   }
   function paintLive(){
     if(state.view!=='tonight'||!state.data)return;
-    state.data.tonight.concat(state.data.formMorning||[]).forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el){el.innerHTML=liveHtml(p);var pc=el.closest('.pc');if(pc)pc.classList.toggle('is-live',!!el.querySelector('.lv-bug'));}});
+    state.data.tonight.concat(state.data.formCompare||[]).forEach(function(p){var el=document.querySelector('.livebox[data-live="'+(window.CSS&&CSS.escape?CSS.escape(pkey(p)):pkey(p))+'"]');if(el){el.innerHTML=liveHtml(p);var pc=el.closest('.pc');if(pc)pc.classList.toggle('is-live',!!el.querySelector('.lv-bug'));}});
   }
   function pollLive(force){
     var t=liveTargets();if(!t.length||liveBusy)return;
