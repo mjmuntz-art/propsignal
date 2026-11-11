@@ -565,6 +565,28 @@ table.bt{width:100%;border-collapse:collapse;font-size:13px}
 .loading{padding:80px 0;text-align:center;color:var(--ink3);font-family:var(--disp);font-size:22px}
 .note2{font-size:12.5px;color:var(--ink3);line-height:1.5}
 @media (prefers-reduced-motion:no-preference){.cards.enter .pc{animation:rise .4s cubic-bezier(.2,.7,.2,1) both}.cards.enter .pc:nth-child(2){animation-delay:.05s}.cards.enter .pc:nth-child(3){animation-delay:.1s}.cards.enter .pc:nth-child(4){animation-delay:.15s}@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}}
+
+.tmos{display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:8px 11px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);font-size:12.5px;color:var(--ink2)}
+.tmos b{color:var(--ink)}.tmos .x{margin-left:auto;font-size:11px;color:var(--ink3);white-space:nowrap}.tmos .ic{font-size:12px}
+.tmos.g{background:#3DBB8614;border-color:#3DBB8655}.tmos.g b,.tmos.g .ic{color:var(--mint)}
+.tmos.b{background:#F06A5714;border-color:#F06A5755}.tmos.b b,.tmos.b .ic{color:var(--neg)}
+.s-c{margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)}
+.tmo .sh{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.tmsz button,.tmchips button{border:1px solid var(--line2);background:none;color:var(--ink2);font:600 12px/1 inherit;padding:6px 10px;border-radius:999px;cursor:pointer;margin-left:4px;text-transform:none;letter-spacing:0}
+.tmchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.tmchips button{margin:0}
+.tmsz button[aria-pressed="true"],.tmchips button[aria-pressed="true"]{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc)}
+.tmchips i{font-style:normal;color:var(--neg);font-weight:800;font-size:10px;margin-left:5px}
+.tmkp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.tmk{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:8px 10px}
+.tmk i{display:block;font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}.tmk b{font-size:19px;font-family:'Barlow Condensed',sans-serif}
+.tmt td,.tmt th{text-align:right}.tmt td:first-child,.tmt th:first-child{text-align:left}
+.tmg{width:100%;border-collapse:collapse;font-size:12px}.tmg td{padding:6px 4px;border-top:1px solid var(--line2)}.tmg td:last-child{text-align:right}
+.tmb{border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:var(--panel)}
+.tmr{display:grid;grid-template-columns:2.2fr .6fr .8fr 1fr 1.1fr .9fr;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line2);font-size:13px;cursor:pointer}
+.tmr:first-child{border-top:0}.tmr.h{cursor:default;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);font-weight:700}.tmr.on{background:#6F94FF10}
+.pn2{display:flex;align-items:center;gap:9px;min-width:0}.pn2 span{min-width:0}.pn2 b{display:block}.pn2 small{display:block;font-size:11px;color:var(--ink3)}
+.pn2 small i{font-style:normal;font-size:10px;font-weight:800;color:var(--neg);border:1px solid #F06A5755;border-radius:5px;padding:1px 5px;margin-left:6px}
+.tmx{padding:4px 14px 14px;background:var(--bg);border-top:1px solid var(--line2)}
+@media(max-width:640px){.tmr{grid-template-columns:1.8fr .5fr .7fr .9fr;font-size:12px}.tmr>div:nth-child(5){display:none}.tmr>div:nth-child(4){display:none}.tmr.h>div:nth-child(4),.tmr.h>div:nth-child(5){display:none}.tmkp{grid-template-columns:repeat(3,1fr)}.tmk b{font-size:17px}}
 </style>
 </head>
 <body>
@@ -757,7 +779,8 @@ var API = (function(){
         fx('Matchup',S.matchup,esc(mp+words(c.matchup||'').toLowerCase()))+fx('Market',S.market,esc(words(c.marketStatus||'').toLowerCase()))+
         fx('Reliability',S.reliability,cons||'');
     }
-    return h+'</div></div></div>';
+    var tmB=tmoBlock(p);
+    return h+'</div>'+(tmB?'<div class="s-c">'+tmB+'</div>':'')+'</div></div>';
   }
   // P42: Form SIX cards show the morning number and the price right now.
   function nowHtml(p){
@@ -825,7 +848,7 @@ var API = (function(){
         '<div class="pa-pr"><b class="n">'+odds(p.odds)+'</b><em>'+esc(p.book||'')+'<br>'+(isVoid?'VOID':p.form?'Form · model '+esc((p.modelDecision||'PASS').toLowerCase()):esc(p.decision||''))+(p.grade?' · '+esc(p.grade):'')+'</em></div>'+
         '<div class="pa-ed"><div class="k">EDGE</div><div class="v n">'+pts(p.edge)+'</div></div></div>'+
       '<div class="livebox" data-live="'+k+'">'+lvh+'</div>'+stats+
-      '<div class="pc-body">'+(p.morningView?'':moveHtml(p))+nowHtml(p)+
+      '<div class="pc-body">'+(p.morningView?'':moveHtml(p))+nowHtml(p)+tmoStrip(p)+
         '<div class="flags">'+flags.join('')+'</div>'+scout(p)+
       '</div>'+
       '<div class="pc-foot">'+lk+'<button class="more" data-more="'+k+'">Full game log <i>▾</i></button></div>'+
@@ -1166,6 +1189,62 @@ var API = (function(){
     return h;
   }
 
+
+  // ---- P50: teammate out ----------------------------------------------------
+  function tmoOf(pid){return ((state.data||{}).teammateOut||{})[pid]||null;}
+  function tmoLast(n){n=String(n||'');var a=n.split(' ');return a.length>1?a.slice(1).join(' '):n;}
+  function tmoD(sp,k){if(!sp||!sp.w||!sp.wo||sp.wo.g<1||sp.w[k]==null||sp.wo[k]==null)return null;return Math.round((sp.wo[k]-sp.w[k])*10)/10;}
+  function tmoF(x){return x==null?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1);}
+  function tmoHits(games,st,line,dir){var n=0,h=0;(games||[]).forEach(function(g){var v=g[st];if(v==null||line==null)return;n++;if(dir==='Over'?v>line:v<line)h++;});return {h:h,n:n};}
+  function tmoBest(T){if(!T)return null;var a=T.mates.filter(function(m){return m.out&&m.cur&&m.cur.wo&&m.cur.wo.g>0;});a.sort(function(x,y){return y.cur.wo.g-x.cur.wo.g;});return a[0]||null;}
+  function tmoStrip(p){
+    var T=tmoOf(p.playerId),m=tmoBest(T);if(!m)return '';
+    var st=p.stat,dm=tmoD(m.cur,'min'),ds=tmoD(m.cur,st),good=ds==null||ds===0?null:(p.direction==='Over'?ds>0:ds<0);
+    return '<div class="tmos '+(good==null?'':good?'g':'b')+'"><span class="ic">'+(good===false?'⚠':'▲')+'</span><span><b>'+esc(tmoLast(m.name))+' OUT</b> · without him: '+tmoF(dm)+' min, '+tmoF(ds)+' '+esc(STAT[st]||st)+'</span><span class="x">'+m.cur.wo.g+' G</span></div>';
+  }
+  function tmoBlock(p){
+    var T=tmoOf(p.playerId);if(!T||!T.mates.length)return '';
+    var pid=p.playerId,st=p.stat,L=p.line,dir=p.direction,season=state.tmoSeason==='prev'?'prev':'cur';
+    var f1=function(v){return v==null?'—':Number(v).toFixed(1);};
+    var opts=T.mates.map(function(m){return {k:m.tid,lab:tmoLast(m.name),out:m.out,d:m};});
+    if(T.combo)opts.splice(T.mates.filter(function(m){return m.out;}).length,0,{k:'combo',lab:T.combo.names.map(tmoLast).join(' + '),out:true,d:T.combo});
+    var dflt=(opts.filter(function(o){return o.out;})[0]||opts[0]).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
+    var sp=o.d[season],hasPrev=!!o.d.prev,nm=o.k==='combo'?'both':tmoLast(o.d.name);
+    var h='<div class="tmo"><div class="sh"><span>Teammate out</span><span class="tmsz">'+(hasPrev?'<button data-tmos="cur" aria-pressed="'+(season==='cur')+'">This season</button><button data-tmos="prev" aria-pressed="'+(season==='prev')+'">Last season</button>':'this season')+'</span></div>';
+    h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&x.k!=='combo'?'<i>OUT</i>':'')+'</button>';}).join('')+'</div>';
+    if(!sp||!sp.w){return h+'<div class="avnote">No games to compare for this split'+(season==='cur'?' this season':' last season')+'.</div></div>';}
+    var hits=tmoHits(sp.games,st,L,dir),hr=hits.n?hits.h/hits.n:null;
+    var tl=function(k,v,c2){return '<div class="tmk"><i>'+k+'</i><b class="n '+(c2||'')+'">'+v+'</b></div>';};
+    var up=function(k){var d=tmoD(sp,k);return d==null||d===0?'':d>0?'pos':'neg';};
+    h+='<div class="tmkp">'+tl('Min w/o '+esc(nm),f1(sp.wo.min),up('min'))+tl(esc((STAT[st]||st).toUpperCase())+' w/o',f1(sp.wo[st]),(function(){var d=tmoD(sp,st);return d==null||d===0?'':(dir==='Over'?d>0:d<0)?'pos':'neg';})())+
+      (sp.games?tl('vs '+(L==null?'line':L)+' w/o',hits.n?hits.h+' of '+hits.n:'—',hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':''):tl('Games w/o',sp.wo.g,''))+'</div>';
+    var td=function(r,k,cl){return '<td class="n '+(cl||'')+'">'+f1(r[k])+'</td>';};
+    h+='<table class="av tmt"><tr><th></th><th>G</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>3PM</th></tr>'+
+      '<tr><td>With</td><td class="n">'+sp.w.g+'</td>'+td(sp.w,'min')+td(sp.w,'PTS')+td(sp.w,'REB')+td(sp.w,'AST')+td(sp.w,'3PT')+'</tr>'+
+      '<tr><td>Without</td><td class="n">'+sp.wo.g+'</td>'+td(sp.wo,'min',up('min'))+td(sp.wo,'PTS',up('PTS'))+td(sp.wo,'REB',up('REB'))+td(sp.wo,'AST',up('AST'))+td(sp.wo,'3PT',up('3PT'))+'</tr></table>';
+    if(sp.games&&sp.games.length){
+      h+='<div class="sh"><span>Games without '+esc(nm)+'</span><span>vs tonight’s '+(L==null?'line':L)+'</span></div><table class="tmg">'+sp.games.slice(0,8).map(function(g){var v=g[st],ou=v==null||L==null?'':v>L?'Over':v<L?'Under':'Push',win=ou===dir;
+        return '<tr><td>'+esc(dayLabel(g.date,{month:'short',day:'numeric'}))+' · '+(g.v==='A'?'@ ':'vs ')+esc(g.opp||'')+'</td><td class="n">'+(g.min==null?'—':g.min)+' min</td><td class="n">'+(v==null?'—':v)+' '+esc(STAT[st]||st)+'</td><td class="'+(ou==='Push'||!ou?'':win?'pos':'neg')+'"><b>'+ou+'</b></td></tr>';}).join('')+'</table>';
+    }
+    var n=sp.wo.g;h+='<div class="avnote">'+(n<5?n+' game'+(n===1?'':'s')+' without '+esc(nm)+' · small sample, read it as a lean. ':'')+'Games he missed, not shared floor time.</div></div>';
+    return h;
+  }
+  function tmoBoardRows(d){
+    return boardRows(d).map(function(r){var T=tmoOf(r.playerId),m=tmoBest(T);if(!m)return null;var sp=m.cur,hh=tmoHits(sp.games,r.stat,r.line,r.direction);
+      return {r:r,m:m,dm:tmoD(sp,'min'),ds:tmoD(sp,r.stat),hits:hh,key:r.playerId+'|'+r.stat+'|'+r.direction};}).filter(Boolean)
+      .sort(function(a,b){return (b.dm==null?-99:b.dm)-(a.dm==null?-99:a.dm);});
+  }
+  function tmoBoardView(d){
+    var L=tmoBoardRows(d);
+    if(!L.length)return '<div class="empty">No props tonight with a rotation teammate ruled out and games to compare.</div>';
+    return '<div class="tmb"><div class="tmr h"><div>Player · out tonight</div><div>G w/o</div><div>MIN</div><div>Stat</div><div>Pick</div><div>vs line</div></div>'+L.map(function(x){
+      var r=x.r,hr=x.hits.n?x.hits.h/x.hits.n:null,open=state.tmoOpen===x.key;
+      var cl=function(v){return v==null||v===0?'':v>0?'pos':'neg';};
+      return '<div class="tmr'+(open?' on':'')+'" data-tmb="'+esc(x.key)+'" style="'+tv(r.team)+'"><div class="pn2">'+lchip(r.teamLogo,'sm')+'<span><b>'+esc(r.player)+'</b><small>'+esc(tmoLast(x.m.name))+'<i>'+esc(x.m.status||'OUT')+'</i></small></span></div><div class="n">'+x.m.cur.wo.g+'</div><div class="n '+cl(x.dm)+'">'+tmoF(x.dm)+'</div><div class="n '+(x.ds==null||x.ds===0?'':(r.direction==='Over'?x.ds>0:x.ds<0)?'pos':'neg')+'">'+tmoF(x.ds)+' '+esc(STAT[r.stat]||r.stat)+'</div><div>'+(r.direction==='Over'?'O':'U')+' '+(r.line==null?'—':r.line)+' '+esc((STAT[r.stat]||r.stat).toUpperCase())+'</div><div class="n '+(hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':'')+'">'+(x.hits.n?x.hits.h+' of '+x.hits.n:'—')+'</div></div>'+
+        (open?'<div class="tmx">'+tmoBlock({playerId:r.playerId,stat:r.stat,line:r.line,direction:r.direction})+'</div>':'');}).join('')+'</div>'+
+      '<p class="foot">“vs line” = how often he went '+'the way of tonight’s pick in games without that teammate. Tap a row for the full breakdown.</p>';
+  }
+
   // ---- board ---------------------------------------------------------------
   function boardRows(d){
     var rows=d.board.rows.filter(function(r){if(state.boardStat!=='ALL'&&r.stat!==state.boardStat)return false;if(state.boardForm&&r.form==null)return false;if(state.boardOnly&&!(r.decision==='PLAY'||r.decision==='LEAN'||r.decision==='WATCH'))return false;if(state.q&&(r.player+' '+r.game).toLowerCase().indexOf(state.q)===-1)return false;return true;});
@@ -1193,8 +1272,8 @@ var API = (function(){
         '<td class="n hm">'+odds(r.odds)+'</td><td class="n hm">'+(r.proj==null?'—':r.proj)+'</td><td class="n hm">'+(r.l10avg==null?'—':r.l10avg)+'</td><td class="hm">'+esc(r.grade||'—')+'</td>'+
         '<td><span class="eb"><i class="'+(e<0?'ng':'')+'" style="width:'+w.toFixed(0)+'px"></i><b class="n" style="color:'+(e<0?'var(--neg)':'var(--acc)')+'">'+pts(e)+'</b></span></td><td>'+callPill(r)+'</td></tr>';}).join('');
     return '<div class="ph"><h1><small>Every prop the model graded today · '+d.board.rows.length+' rows</small>Board</h1><div class="chips">'+seg('stat',[['ALL','All'],['PTS','PTS'],['REB','REB'],['AST','AST'],['3PT','3PT']],state.boardStat)+'</div></div>'+
-      '<div class="bar"><input class="search" id="q" type="search" placeholder="Search player or game" value="'+esc(state.q)+'"><div class="seg"><button id="formBtn" aria-pressed="'+!!state.boardForm+'">Form signal</button></div><div class="seg"><button id="onlyBtn" aria-pressed="'+state.boardOnly+'">Plays &amp; watch only</button></div></div>'+
-      '<div class="tablewrap"><table class="bt2"><thead>'+head+'</thead><tbody>'+(body||'<tr><td colspan="9" style="text-align:left">No props match.</td></tr>')+'</tbody></table></div>';
+      '<div class="bar"><input class="search" id="q" type="search" placeholder="Search player or game" value="'+esc(state.q)+'"><div class="seg"><button id="formBtn" aria-pressed="'+!!state.boardForm+'">Form signal</button><button id="tmoBtn" aria-pressed="'+!!state.boardTmo+'">Teammate out · '+tmoBoardRows(d).length+'</button></div><div class="seg"><button id="onlyBtn" aria-pressed="'+state.boardOnly+'">Plays &amp; watch only</button></div></div>'+
+      (state.boardTmo?tmoBoardView(d):'<div class="tablewrap"><table class="bt2"><thead>'+head+'</thead><tbody>'+(body||'<tr><td colspan="9" style="text-align:left">No props match.</td></tr>')+'</tbody></table></div>');
   }
 
   // ---- render + wiring -----------------------------------------------------
@@ -1237,6 +1316,10 @@ var API = (function(){
     document.querySelectorAll('[data-stat]').forEach(function(b){b.onclick=function(){state.boardStat=b.getAttribute('data-stat');render();};});
     var ob=document.getElementById('onlyBtn');if(ob)ob.onclick=function(){state.boardOnly=!state.boardOnly;render();};
     var fb=document.getElementById('formBtn');if(fb)fb.onclick=function(){state.boardForm=!state.boardForm;render();};
+    var tb=document.getElementById('tmoBtn');if(tb)tb.onclick=function(){state.boardTmo=!state.boardTmo;render();};
+    document.querySelectorAll('[data-tmb]').forEach(function(el){el.onclick=function(){var k=el.getAttribute('data-tmb');state.tmoOpen=state.tmoOpen===k?null:k;render();};});
+    document.querySelectorAll('[data-tmo]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var a=b.getAttribute('data-tmo').split('|');state.tmoSel=state.tmoSel||{};state.tmoSel[a[0]]=a[1];render();};});
+    document.querySelectorAll('[data-tmos]').forEach(function(b){b.onclick=function(e){e.stopPropagation();state.tmoSeason=b.getAttribute('data-tmos');render();};});
     var q=document.getElementById('q');if(q)q.oninput=function(){state.q=q.value.toLowerCase();var pos=q.selectionStart;render();var n=document.getElementById('q');if(n){n.focus();n.setSelectionRange(pos,pos);}};
     document.querySelectorAll('th[data-k]').forEach(function(th){th.onclick=function(){var k=th.getAttribute('data-k');state.sort=state.sort.k===k?{k:k,d:-state.sort.d}:{k:k,d:(k==='player'||k==='stat'?1:-1)};render();};});
   }
