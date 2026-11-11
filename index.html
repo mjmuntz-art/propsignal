@@ -1197,28 +1197,34 @@ var API = (function(){
   function tmoD(sp,k){if(!sp||!sp.w||!sp.wo||sp.wo.g<1||sp.w[k]==null||sp.wo[k]==null)return null;return Math.round((sp.wo[k]-sp.w[k])*10)/10;}
   function tmoF(x){return x==null?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1);}
   function tmoHits(games,st,line,dir){var n=0,h=0;(games||[]).forEach(function(g){var v=g[st];if(v==null||line==null)return;n++;if(dir==='Over'?v>line:v<line)h++;});return {h:h,n:n};}
+  function tmoCombos(T){return (T&&(T.combos||(T.combo?[T.combo]:[])))||[];}
+  function tmoName(x){return x.tids?(x.all&&x.tids.length>2?x.names.map(tmoLast).join(', '):x.names.map(tmoLast).join(' + ')):tmoLast(x.name);}
   function tmoBest(T){if(!T)return null;var outs=T.mates.filter(function(m){return m.out;});if(!outs.length)return null;
     var g=function(m,s){return m[s]&&m[s].wo?m[s].wo.g:0;};
+    var all=tmoCombos(T).filter(function(c){return c.all;})[0];
+    if(all){if(g(all,'cur')>0)return {m:all,s:'cur',sp:all.cur,combo:true};if(g(all,'prev')>0)return {m:all,s:'prev',sp:all.prev,combo:true};}
     var a=outs.filter(function(m){return g(m,'cur')>0;}).sort(function(x,y){return g(y,'cur')-g(x,'cur');});if(a.length)return {m:a[0],s:'cur',sp:a[0].cur};
     var b=outs.filter(function(m){return g(m,'prev')>0;}).sort(function(x,y){return g(y,'prev')-g(x,'prev');});if(b.length)return {m:b[0],s:'prev',sp:b[0].prev};
     return {m:outs[0],s:null,sp:null};}
   function tmoStrip(p){
     var T=tmoOf(p.playerId),B=tmoBest(T);if(!B)return '';var m=B.m;
-    if(!B.sp)return '<div class="tmos"><span class="ic">•</span><span><b>'+esc(tmoLast(m.name))+' OUT</b> · no games without him to compare yet</span></div>';
+    if(!B.sp)return '<div class="tmos"><span class="ic">•</span><span><b>'+esc(tmoName(m))+' OUT</b> · no games without him to compare yet</span></div>';
     var st=p.stat,dm=tmoD(B.sp,'min'),ds=tmoD(B.sp,st),good=ds==null||ds===0?null:(p.direction==='Over'?ds>0:ds<0);
-    return '<div class="tmos '+(good==null?'':good?'g':'b')+'"><span class="ic">'+(good===false?'⚠':'▲')+'</span><span><b>'+esc(tmoLast(m.name))+' OUT</b> · without him: '+tmoF(dm)+' min, '+tmoF(ds)+' '+esc(STAT[st]||st)+'</span><span class="x">'+(B.s==='prev'?'last season · ':'')+B.sp.wo.g+' G</span></div>';
+    return '<div class="tmos '+(good==null?'':good?'g':'b')+'"><span class="ic">'+(good===false?'⚠':'▲')+'</span><span><b>'+esc(tmoName(m))+' OUT</b> · '+(B.combo?'with all '+m.tids.length+' out':'without him')+': '+tmoF(dm)+' min, '+tmoF(ds)+' '+esc(STAT[st]||st)+'</span><span class="x">'+(B.s==='prev'?'last season · ':'')+B.sp.wo.g+' G</span></div>';
   }
   function tmoBlock(p){
     var T=tmoOf(p.playerId);if(!T||!T.mates.length)return '';
     var pid=p.playerId,st=p.stat,L=p.line,dir=p.direction,season=state.tmoSeason==='prev'?'prev':'cur';
     var f1=function(v){return v==null?'—':Number(v).toFixed(1);};
     var opts=T.mates.map(function(m){return {k:m.tid,lab:tmoLast(m.name),out:m.out,d:m};});
-    if(T.combo)opts.splice(T.mates.filter(function(m){return m.out;}).length,0,{k:'combo',lab:T.combo.names.map(tmoLast).join(' + '),out:true,d:T.combo});
-    var dflt=(opts.filter(function(o){return o.out;})[0]||opts[0]).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
+    var nOut=T.mates.filter(function(m){return m.out;}).length,cbs=tmoCombos(T);
+    cbs.forEach(function(c,i){opts.splice(nOut+i,0,{k:'c'+i,lab:c.all?'All '+c.tids.length+' out':c.names.map(tmoLast).join(' + '),out:true,d:c,combo:true});});
+    var allIdx=cbs.map(function(c){return c.all;}).indexOf(true),allOpt=allIdx>=0?opts.filter(function(x){return x.k==='c'+allIdx;})[0]:null;
+    var dflt=(allOpt&&((allOpt.d.cur&&allOpt.d.cur.wo&&allOpt.d.cur.wo.g)||(allOpt.d.prev&&allOpt.d.prev.wo&&allOpt.d.prev.wo.g))?allOpt:(opts.filter(function(o){return o.out&&!o.combo;})[0]||opts[0])).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
     var auto='';if(!state.tmoSeason&&season==='cur'&&(!o.d.cur||!o.d.cur.wo||!o.d.cur.wo.g)&&o.d.prev&&o.d.prev.wo&&o.d.prev.wo.g){season='prev';auto='No games without him yet this season, so this shows last season.';}
-    var sp=o.d[season],hasPrev=!!o.d.prev,nm=o.k==='combo'?'both':tmoLast(o.d.name);
+    var sp=o.d[season],hasPrev=!!o.d.prev,nm=o.combo?(o.d.tids.length>2?'all '+o.d.tids.length:'both'):tmoLast(o.d.name);
     var h='<div class="tmo"><div class="sh"><span>Teammate out</span><span class="tmsz">'+(hasPrev?'<button data-tmos="cur" aria-pressed="'+(season==='cur')+'">This season</button><button data-tmos="prev" aria-pressed="'+(season==='prev')+'">Last season</button>':'this season')+'</span></div>';
-    h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&x.k!=='combo'?'<i>OUT</i>':'')+'</button>';}).join('')+'</div>';
+    h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&!x.combo?'<i>OUT</i>':'')+'</button>';}).join('')+'</div>';
     if(!sp||!sp.w||(!sp.wo.g&&o.out)){return h+'<div class="avnote">'+(o.out?'No games without '+esc(nm)+' to compare '+(season==='cur'?'this season':'last season')+' yet.':'No games to compare for this split.')+'</div></div>';}
     if(auto)h+='<div class="avnote" style="margin:-4px 0 8px">'+auto+'</div>';
     var hits=tmoHits(sp.games,st,L,dir),hr=hits.n?hits.h/hits.n:null;
@@ -1248,7 +1254,7 @@ var API = (function(){
     return '<div class="tmb"><div class="tmr h"><div>Player · out tonight</div><div>G w/o</div><div>MIN</div><div>Stat</div><div>Pick</div><div>vs line</div></div>'+L.map(function(x){
       var r=x.r,hr=x.hits.n?x.hits.h/x.hits.n:null,open=state.tmoOpen===x.key;
       var cl=function(v){return v==null||v===0?'':v>0?'pos':'neg';};
-      return '<div class="tmr'+(open?' on':'')+'" data-tmb="'+esc(x.key)+'" style="'+tv(r.team)+'"><div class="pn2">'+lchip(r.teamLogo,'sm')+'<span><b>'+esc(r.player)+'</b><small>'+esc(tmoLast(x.m.name))+'<i>'+esc(x.m.status||'OUT')+'</i></small></span></div><div class="n">'+(x.sp?x.sp.wo.g+(x.s==='prev'?'<small class="ls">last szn</small>':''):'—')+'</div><div class="n '+cl(x.dm)+'">'+tmoF(x.dm)+'</div><div class="n '+(x.ds==null||x.ds===0?'':(r.direction==='Over'?x.ds>0:x.ds<0)?'pos':'neg')+'">'+tmoF(x.ds)+' '+esc(STAT[r.stat]||r.stat)+'</div><div>'+(r.direction==='Over'?'O':'U')+' '+(r.line==null?'—':r.line)+' '+esc((STAT[r.stat]||r.stat).toUpperCase())+'</div><div class="n '+(hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':'')+'">'+(x.hits.n?x.hits.h+' of '+x.hits.n:'—')+'</div></div>'+
+      return '<div class="tmr'+(open?' on':'')+'" data-tmb="'+esc(x.key)+'" style="'+tv(r.team)+'"><div class="pn2">'+lchip(r.teamLogo,'sm')+'<span><b>'+esc(r.player)+'</b><small>'+esc(tmoName(x.m))+'<i>'+(x.m.tids?'ALL OUT':esc(x.m.status||'OUT'))+'</i></small></span></div><div class="n">'+(x.sp?x.sp.wo.g+(x.s==='prev'?'<small class="ls">last szn</small>':''):'—')+'</div><div class="n '+cl(x.dm)+'">'+tmoF(x.dm)+'</div><div class="n '+(x.ds==null||x.ds===0?'':(r.direction==='Over'?x.ds>0:x.ds<0)?'pos':'neg')+'">'+tmoF(x.ds)+' '+esc(STAT[r.stat]||r.stat)+'</div><div>'+(r.direction==='Over'?'O':'U')+' '+(r.line==null?'—':r.line)+' '+esc((STAT[r.stat]||r.stat).toUpperCase())+'</div><div class="n '+(hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':'')+'">'+(x.hits.n?x.hits.h+' of '+x.hits.n:'—')+'</div></div>'+
         (open?'<div class="tmx">'+tmoBlock({playerId:r.playerId,stat:r.stat,line:r.line,direction:r.direction})+'</div>':'');}).join('')+'</div>'+
       '<p class="foot">“vs line” = how often he went '+'the way of tonight’s pick in games without that teammate. Tap a row for the full breakdown.</p>';
   }
