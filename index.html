@@ -575,7 +575,9 @@ table.bt{width:100%;border-collapse:collapse;font-size:13px}
 .tmsz button,.tmchips button{border:1px solid var(--line2);background:none;color:var(--ink2);font:600 12px/1 inherit;padding:6px 10px;border-radius:999px;cursor:pointer;margin-left:4px;text-transform:none;letter-spacing:0}
 .tmchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.tmchips button{margin:0}
 .tmsz button[aria-pressed="true"],.tmchips button[aria-pressed="true"]{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc)}
-.tmchips i{font-style:normal;color:var(--neg);font-weight:800;font-size:10px;margin-left:5px}
+.tmchips i{font-style:normal;color:var(--neg);font-weight:800;font-size:10px;margin-left:5px}.tmchips i.q,.tmr i.q{color:#E8B54A}
+.tmos.q{border-style:dashed;border-color:#E8B54A88;background:#E8B54A10}.tmos.q .ic{color:#E8B54A;font-weight:800}
+.qneed{margin:-4px 0 10px;padding:7px 11px;border-radius:10px;font-size:12px;color:var(--ink2);background:var(--panel);border:1px solid var(--line2)}.qneed b{color:#E8B54A}.qneed.bad b{color:var(--neg)}
 .tmkp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.tmk{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:8px 10px}
 .tmk i{display:block;font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}.tmk b{font-size:19px;font-family:'Barlow Condensed',sans-serif}
 .tmt td,.tmt th{text-align:right}.tmt td:first-child,.tmt th:first-child{text-align:left}
@@ -1209,7 +1211,21 @@ var API = (function(){
     var a=outs.filter(function(m){return g(m,'cur')>0;}).sort(function(x,y){return g(y,'cur')-g(x,'cur');});if(a.length)return {m:a[0],s:'cur',sp:a[0].cur};
     var b=outs.filter(function(m){return g(m,'prev')>0;}).sort(function(x,y){return g(y,'prev')-g(x,'prev');});if(b.length)return {m:b[0],s:'prev',sp:b[0].prev};
     return {m:outs[0],s:null,sp:null};}
-  function tmoStrip(p){
+  function tmoQSp(m){if(!m)return null;if(m.cur&&m.cur.wo&&m.cur.wo.g>0)return {sp:m.cur,s:'cur'};if(m.prev&&m.prev.wo&&m.prev.wo.g>0)return {sp:m.prev,s:'prev'};return {sp:null,s:null};}
+  function tmoQs(T){return T?T.mates.filter(function(m){return m.q;}):[];}
+  function tmoQStrip(p){
+    var T=tmoOf(p.playerId);return tmoQs(T).slice(0,2).map(function(m){
+      var Q=tmoQSp(m),nm=tmoLast(m.name),st=p.stat,L=p.line,lab=esc(m.qLabel||'questionable');
+      if(!Q.sp)return '<div class="tmos q"><span class="ic">?</span><span><b>'+esc(nm)+' '+lab+'</b> · no games without him to compare yet</span></div>';
+      var sp=Q.sp,dm=tmoD(sp,'min'),ds=tmoD(sp,st);
+      var h='<div class="tmos q"><span class="ic">?</span><span><b>'+esc(nm)+' '+lab+'</b> · if he sits: '+tmoF(dm)+' min, '+tmoF(ds)+' '+esc(STAT[st]||st)+'</span><span class="x">'+(Q.s==='prev'?'last season · ':'')+sp.wo.g+' G</span></div>';
+      var w=sp.w&&sp.w[st],wo=sp.wo&&sp.wo[st];
+      if(w!=null&&wo!=null&&L!=null){var ov=p.direction==='Over',okW=ov?w>L:w<L,okWo=ov?wo>L:wo<L,pick=ov?'Over':'Under',S=esc(STAT[st]||st);
+        if(okW!==okWo)h+='<div class="qneed '+(okWo?'':'bad')+'">With '+esc(nm)+': <b>'+Number(w).toFixed(1)+' '+S+'</b> avg vs '+L+' line · without him: <b>'+Number(wo).toFixed(1)+'</b> → this '+pick+' '+(okWo?'<b>leans on '+esc(nm)+' sitting</b>':'<b>gets riskier if '+esc(nm)+' sits</b>')+'</div>';}
+      return h;}).join('');
+  }
+  function tmoStrip(p){return tmoStrip0(p)+tmoQStrip(p);}
+  function tmoStrip0(p){
     var T=tmoOf(p.playerId),B=tmoBest(T);
     if(!B){var np=(T&&T.notePlay)||[];return np.length?'<div class="tmos"><span class="ic">•</span><span><b>'+esc(tmoLast(np[0].name))+'</b> listed '+esc(np[0].status)+', but the note says he’ll play — counted as playing</span></div>':'';}
     var m=B.m;
@@ -1221,19 +1237,21 @@ var API = (function(){
     var T=tmoOf(p.playerId);if(!T||!T.mates.length)return '';
     var pid=p.playerId,st=p.stat,L=p.line,dir=p.direction,season=state.tmoSeason==='prev'?'prev':'cur';
     var f1=function(v){return v==null?'—':Number(v).toFixed(1);};
-    var opts=T.mates.map(function(m){return {k:m.tid,lab:tmoLast(m.name),out:m.out,d:m};});
+    var opts=T.mates.map(function(m){return {k:m.tid,lab:tmoLast(m.name),out:m.out,q:!!m.q,d:m};});
     var nOut=T.mates.filter(function(m){return m.out;}).length,cbs=tmoCombos(T);
-    cbs.forEach(function(c,i){opts.splice(nOut+i,0,{k:'c'+i,lab:c.all?'All '+c.tids.length+' out':c.names.map(tmoLast).join(' + '),out:true,d:c,combo:true});});
+    var nc=0;cbs.forEach(function(c,i){if(c.q)return;opts.splice(nOut+(nc++),0,{k:'c'+i,lab:c.all?'All '+c.tids.length+' out':c.names.map(tmoLast).join(' + '),out:true,d:c,combo:true});});
+    cbs.forEach(function(c,i){if(!c.q)return;var nq=c.tids.length-1,ql=tmoLast(c.names[c.names.length-1]);opts.push({k:'c'+i,lab:(nq>1?'All '+nq+' + ':c.names.slice(0,nq).map(tmoLast).join(' + ')+' + ')+ql,out:true,qc:true,d:c,combo:true});});
     var allIdx=cbs.map(function(c){return c.all;}).indexOf(true),allOpt=allIdx>=0?opts.filter(function(x){return x.k==='c'+allIdx;})[0]:null;
-    var dflt=(allOpt&&((allOpt.d.cur&&allOpt.d.cur.wo&&allOpt.d.cur.wo.g)||(allOpt.d.prev&&allOpt.d.prev.wo&&allOpt.d.prev.wo.g))?allOpt:(opts.filter(function(o){return o.out&&!o.combo;})[0]||opts[0])).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
+    var dflt=(allOpt&&((allOpt.d.cur&&allOpt.d.cur.wo&&allOpt.d.cur.wo.g)||(allOpt.d.prev&&allOpt.d.prev.wo&&allOpt.d.prev.wo.g))?allOpt:(opts.filter(function(o){return o.out&&!o.combo;})[0]||opts.filter(function(o){return o.q;})[0]||opts[0])).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
     var auto='';if(!state.tmoSeason&&season==='cur'&&(!o.d.cur||!o.d.cur.wo||!o.d.cur.wo.g)&&o.d.prev&&o.d.prev.wo&&o.d.prev.wo.g){season='prev';auto='No games without him yet this season, so this shows last season.';}
     var sp=o.d[season],hasPrev=!!o.d.prev,nm=o.combo?(o.d.tids.length>2?'all '+o.d.tids.length:'both'):tmoLast(o.d.name);
+    var qn=tmoQs(T).filter(function(m){return m.qNote;}).map(function(m){return '<div class="avnote tmnote"><b>'+esc(tmoLast(m.name))+'</b> is '+esc(m.qLabel||'questionable')+': “'+esc(m.qNote)+'”</div>';}).join('');
     var npl=(T.notePlay||[]).map(function(x){return '<div class="avnote tmnote"><b>'+esc(tmoLast(x.name))+'</b> is listed '+esc(x.status)+', but the note says he’ll play, so he’s counted as playing: “'+esc(x.note)+'”</div>';}).join('');
     var nout=T.mates.filter(function(m){return m.noteFlag&&m.noteFlag.conflict==='NOTE_OUT';}).map(function(m){return '<div class="avnote tmnote"><b>'+esc(tmoLast(m.name))+'</b> isn’t listed out, but the note says he is, so he’s counted as out: “'+esc(m.noteFlag.note)+'”</div>';}).join('');
     var h='<div class="tmo"><div class="sh"><span>Teammate out</span><span class="tmsz">'+(hasPrev?'<button data-tmos="cur" aria-pressed="'+(season==='cur')+'">This season</button><button data-tmos="prev" aria-pressed="'+(season==='prev')+'">Last season</button>':'this season')+'</span></div>';
-    h+=npl+nout;
-    h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&!x.combo?'<i>OUT</i>':'')+'</button>';}).join('')+'</div>';
-    if(!sp||!sp.w||(!sp.wo.g&&o.out)){return h+'<div class="avnote">'+(o.out?'No games without '+esc(nm)+' to compare '+(season==='cur'?'this season':'last season')+' yet.':'No games to compare for this split.')+'</div></div>';}
+    h+=npl+nout+qn;
+    h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&!x.combo?'<i>OUT</i>':x.q?'<i class="q">Q</i>':'')+'</button>';}).join('')+'</div>';
+    if(!sp||!sp.w||(!sp.wo.g&&(o.out||o.q))){return h+'<div class="avnote">'+(o.out||o.q?'No games without '+esc(nm)+' to compare '+(season==='cur'?'this season':'last season')+' yet.':'No games to compare for this split.')+'</div></div>';}
     if(auto)h+='<div class="avnote" style="margin:-4px 0 8px">'+auto+'</div>';
     var hits=tmoHits(sp.games,st,L,dir),hr=hits.n?hits.h/hits.n:null;
     var tl=function(k,v,c2){return '<div class="tmk"><i>'+k+'</i><b class="n '+(c2||'')+'">'+v+'</b></div>';};
@@ -1252,17 +1270,19 @@ var API = (function(){
     return h;
   }
   function tmoBoardRows(d){
-    return boardRows(d).map(function(r){var T=tmoOf(r.playerId),B=tmoBest(T);if(!B)return null;var sp=B.sp,hh=sp?tmoHits(sp.games,r.stat,r.line,r.direction):{h:0,n:0};
-      return {r:r,m:B.m,s:B.s,sp:sp,dm:tmoD(sp,'min'),ds:tmoD(sp,r.stat),hits:hh,key:r.playerId+'|'+r.stat+'|'+r.direction};}).filter(Boolean)
+    return boardRows(d).map(function(r){var T=tmoOf(r.playerId),B=tmoBest(T);
+      if(!B){var qm=tmoQs(T).map(function(m){var Q=tmoQSp(m);return Q.sp?{m:m,s:Q.s,sp:Q.sp,q:true}:null;}).filter(Boolean).sort(function(a,b){return b.sp.wo.g-a.sp.wo.g;})[0];if(qm)B=qm;}
+      if(!B)return null;var sp=B.sp,hh=sp?tmoHits(sp.games,r.stat,r.line,r.direction):{h:0,n:0};
+      return {r:r,m:B.m,s:B.s,sp:sp,q:!!B.q,dm:tmoD(sp,'min'),ds:tmoD(sp,r.stat),hits:hh,key:r.playerId+'|'+r.stat+'|'+r.direction};}).filter(Boolean)
       .sort(function(a,b){return (b.dm==null?-99:b.dm)-(a.dm==null?-99:a.dm);});
   }
   function tmoBoardView(d){
     var L=tmoBoardRows(d);
-    if(!L.length)return '<div class="empty">No props tonight with a rotation teammate ruled out and games to compare.</div>';
-    return '<div class="tmb"><div class="tmr h"><div>Player · out tonight</div><div>G w/o</div><div>MIN</div><div>Stat</div><div>Pick</div><div>vs line</div></div>'+L.map(function(x){
+    if(!L.length)return '<div class="empty">No props tonight with a rotation teammate out or questionable and games to compare.</div>';
+    return '<div class="tmb"><div class="tmr h"><div>Player · out / questionable</div><div>G w/o</div><div>MIN</div><div>Stat</div><div>Pick</div><div>vs line</div></div>'+L.map(function(x){
       var r=x.r,hr=x.hits.n?x.hits.h/x.hits.n:null,open=state.tmoOpen===x.key;
       var cl=function(v){return v==null||v===0?'':v>0?'pos':'neg';};
-      return '<div class="tmr'+(open?' on':'')+'" data-tmb="'+esc(x.key)+'" style="'+tv(r.team)+'"><div class="pn2">'+lchip(r.teamLogo,'sm')+'<span><b>'+esc(r.player)+'</b><small>'+esc(tmoName(x.m))+'<i>'+(x.m.tids?'ALL OUT':esc(x.m.status||'OUT'))+'</i></small></span></div><div class="n">'+(x.sp?x.sp.wo.g+(x.s==='prev'?'<small class="ls">last szn</small>':''):'—')+'</div><div class="n '+cl(x.dm)+'">'+tmoF(x.dm)+'</div><div class="n '+(x.ds==null||x.ds===0?'':(r.direction==='Over'?x.ds>0:x.ds<0)?'pos':'neg')+'">'+tmoF(x.ds)+' '+esc(STAT[r.stat]||r.stat)+'</div><div>'+(r.direction==='Over'?'O':'U')+' '+(r.line==null?'—':r.line)+' '+esc((STAT[r.stat]||r.stat).toUpperCase())+'</div><div class="n '+(hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':'')+'">'+(x.hits.n?x.hits.h+' of '+x.hits.n:'—')+'</div></div>'+
+      return '<div class="tmr'+(open?' on':'')+'" data-tmb="'+esc(x.key)+'" style="'+tv(r.team)+'"><div class="pn2">'+lchip(r.teamLogo,'sm')+'<span><b>'+esc(r.player)+'</b><small>'+esc(tmoName(x.m))+(x.q?'<i class="q">Q · IF HE SITS</i>':'<i>'+(x.m.tids?'ALL OUT':esc(x.m.status||'OUT'))+'</i>')+'</small></span></div><div class="n">'+(x.sp?x.sp.wo.g+(x.s==='prev'?'<small class="ls">last szn</small>':''):'—')+'</div><div class="n '+cl(x.dm)+'">'+tmoF(x.dm)+'</div><div class="n '+(x.ds==null||x.ds===0?'':(r.direction==='Over'?x.ds>0:x.ds<0)?'pos':'neg')+'">'+tmoF(x.ds)+' '+esc(STAT[r.stat]||r.stat)+'</div><div>'+(r.direction==='Over'?'O':'U')+' '+(r.line==null?'—':r.line)+' '+esc((STAT[r.stat]||r.stat).toUpperCase())+'</div><div class="n '+(hr==null?'':hr>=0.6?'pos':hr<=0.4?'neg':'')+'">'+(x.hits.n?x.hits.h+' of '+x.hits.n:'—')+'</div></div>'+
         (open?'<div class="tmx">'+tmoBlock({playerId:r.playerId,stat:r.stat,line:r.line,direction:r.direction})+'</div>':'');}).join('')+'</div>'+
       '<p class="foot">“vs line” = how often he went '+'the way of tonight’s pick in games without that teammate. Tap a row for the full breakdown.</p>';
   }
