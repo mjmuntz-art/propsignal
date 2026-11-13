@@ -586,6 +586,7 @@ table.bt{width:100%;border-collapse:collapse;font-size:13px}
 .pn2{display:flex;align-items:center;gap:9px;min-width:0}.pn2 span{min-width:0}.pn2 b{display:block}.pn2 small{display:block;font-size:11px;color:var(--ink3)}
 .pn2 small i{font-style:normal;font-size:10px;font-weight:800;color:var(--neg);border:1px solid #F06A5755;border-radius:5px;padding:1px 5px;margin-left:6px}
 .ls{display:block;font-size:9px;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.tmnote{margin:0 0 8px;padding:7px 10px;border-radius:8px;border:1px solid #E3A84755;background:#E3A84712;color:var(--ink2)}
 .tmx{padding:4px 14px 14px;background:var(--bg);border-top:1px solid var(--line2)}
 @media(max-width:640px){.tmr{grid-template-columns:1.8fr .5fr .7fr .9fr;font-size:12px}.tmr>div:nth-child(5){display:none}.tmr>div:nth-child(4){display:none}.tmr.h>div:nth-child(4),.tmr.h>div:nth-child(5){display:none}.tmkp{grid-template-columns:repeat(3,1fr)}.tmk b{font-size:17px}}
 </style>
@@ -817,6 +818,8 @@ var API = (function(){
     if(!p.form&&c.formSignal!=null)flag('Form signal <b>'+c.formSignal+'%</b>','good');
     if(p.form&&p.gapPct!=null)flag('Form gap <b>'+Math.round(p.gapPct*100)+'%</b>','good');
     if(p.form&&!p.morningView&&p.morningPick===true)flag('Also on Morning SIX');
+    if(p.noteConflict==='NOTE_PLAY')flag('Listed '+esc(p.status||'OUT')+', but the injury note says he’ll play: “'+esc(p.injNote||'')+'”','warn');
+    if(p.noteConflict==='NOTE_OUT')flag('Listed '+esc(p.status||'active')+', but the injury note says he’s out: “'+esc(p.injNote||'')+'”','bad');
     if(p.replaces)flag('Replaces <b>'+esc(p.replaces)+'</b> (scratched)','good');
     if(p.replacedBy)flag('Spot filled by <b>'+esc(p.replacedBy)+'</b>');
     if(p.morningView&&!p.replacedBy){var ls0=p.lockStatus;
@@ -1207,7 +1210,9 @@ var API = (function(){
     var b=outs.filter(function(m){return g(m,'prev')>0;}).sort(function(x,y){return g(y,'prev')-g(x,'prev');});if(b.length)return {m:b[0],s:'prev',sp:b[0].prev};
     return {m:outs[0],s:null,sp:null};}
   function tmoStrip(p){
-    var T=tmoOf(p.playerId),B=tmoBest(T);if(!B)return '';var m=B.m;
+    var T=tmoOf(p.playerId),B=tmoBest(T);
+    if(!B){var np=(T&&T.notePlay)||[];return np.length?'<div class="tmos"><span class="ic">•</span><span><b>'+esc(tmoLast(np[0].name))+'</b> listed '+esc(np[0].status)+', but the note says he’ll play — counted as playing</span></div>':'';}
+    var m=B.m;
     if(!B.sp)return '<div class="tmos"><span class="ic">•</span><span><b>'+esc(tmoName(m))+' OUT</b> · no games without him to compare yet</span></div>';
     var st=p.stat,dm=tmoD(B.sp,'min'),ds=tmoD(B.sp,st),good=ds==null||ds===0?null:(p.direction==='Over'?ds>0:ds<0);
     return '<div class="tmos '+(good==null?'':good?'g':'b')+'"><span class="ic">'+(good===false?'⚠':'▲')+'</span><span><b>'+esc(tmoName(m))+' OUT</b> · '+(B.combo?'with all '+m.tids.length+' out':'without him')+': '+tmoF(dm)+' min, '+tmoF(ds)+' '+esc(STAT[st]||st)+'</span><span class="x">'+(B.s==='prev'?'last season · ':'')+B.sp.wo.g+' G</span></div>';
@@ -1223,7 +1228,10 @@ var API = (function(){
     var dflt=(allOpt&&((allOpt.d.cur&&allOpt.d.cur.wo&&allOpt.d.cur.wo.g)||(allOpt.d.prev&&allOpt.d.prev.wo&&allOpt.d.prev.wo.g))?allOpt:(opts.filter(function(o){return o.out&&!o.combo;})[0]||opts[0])).k,sel=(state.tmoSel||{})[pid]||dflt,o=opts.filter(function(x){return x.k===sel;})[0]||opts[0];
     var auto='';if(!state.tmoSeason&&season==='cur'&&(!o.d.cur||!o.d.cur.wo||!o.d.cur.wo.g)&&o.d.prev&&o.d.prev.wo&&o.d.prev.wo.g){season='prev';auto='No games without him yet this season, so this shows last season.';}
     var sp=o.d[season],hasPrev=!!o.d.prev,nm=o.combo?(o.d.tids.length>2?'all '+o.d.tids.length:'both'):tmoLast(o.d.name);
+    var npl=(T.notePlay||[]).map(function(x){return '<div class="avnote tmnote"><b>'+esc(tmoLast(x.name))+'</b> is listed '+esc(x.status)+', but the note says he’ll play, so he’s counted as playing: “'+esc(x.note)+'”</div>';}).join('');
+    var nout=T.mates.filter(function(m){return m.noteFlag&&m.noteFlag.conflict==='NOTE_OUT';}).map(function(m){return '<div class="avnote tmnote"><b>'+esc(tmoLast(m.name))+'</b> isn’t listed out, but the note says he is, so he’s counted as out: “'+esc(m.noteFlag.note)+'”</div>';}).join('');
     var h='<div class="tmo"><div class="sh"><span>Teammate out</span><span class="tmsz">'+(hasPrev?'<button data-tmos="cur" aria-pressed="'+(season==='cur')+'">This season</button><button data-tmos="prev" aria-pressed="'+(season==='prev')+'">Last season</button>':'this season')+'</span></div>';
+    h+=npl+nout;
     h+='<div class="tmchips">'+opts.map(function(x){return '<button data-tmo="'+esc(pid)+'|'+esc(x.k)+'" aria-pressed="'+(x.k===o.k)+'">'+esc(x.lab)+(x.out&&!x.combo?'<i>OUT</i>':'')+'</button>';}).join('')+'</div>';
     if(!sp||!sp.w||(!sp.wo.g&&o.out)){return h+'<div class="avnote">'+(o.out?'No games without '+esc(nm)+' to compare '+(season==='cur'?'this season':'last season')+' yet.':'No games to compare for this split.')+'</div></div>';}
     if(auto)h+='<div class="avnote" style="margin:-4px 0 8px">'+auto+'</div>';
