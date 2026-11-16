@@ -470,6 +470,11 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .bug .grid .v{font-family:var(--disp);font-weight:800;font-size:28px;line-height:1.05}
 .spark{display:block;width:100%;height:60px;margin-top:10px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ckg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.ck{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.ck .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.ck .k .dim{text-transform:none;letter-spacing:0;font-weight:500}
+.ck .v{font-size:26px;font-weight:800;margin:4px 0 6px}.ck .v small{font-size:13px;font-weight:600;color:var(--ink2)}.ck .s{font-size:12px;color:var(--ink2);margin-top:6px}
+.ckb{height:6px;border-radius:4px;background:var(--line2);overflow:hidden}.ckb i{display:block;height:100%;background:var(--accent,#1d6fe0);border-radius:4px}
+@media (max-width:700px){.ckg{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media (max-width:900px){.g3,.g2{grid-template-columns:1fr}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
@@ -1153,6 +1158,24 @@ var API = (function(){
       '<div class="card"><h3>Recently blocked</h3><p class="note">The most recent graded props a guard held off.</p>'+((G.recent||[]).length?G.recent.map(function(x){
         return '<div class="mini"><span>'+esc(x.player)+' · '+esc(pickTxt(x.direction,x.line,x.stat))+' <span class="dim">· '+esc(x.guard)+'</span></span><span><span class="oc '+esc(x.outcome)+'">'+esc(x.outcome)+'</span> <span class="dim n">'+(x.actual==null?'':x.actual)+'</span></span></div>';}).join(''):'<p class="note2">Nothing yet.</p>')+'</div></div></section>';
   }
+  /* P54: checkpoint tracker. Live graded plays per list vs the ~200 we said we'd
+   * wait for, the pace so far, and the closing-line check date. */
+  function ckptHtml(d){
+    var A=((d.record||{}).eras||{}).all||{},Ls=A.lists||{},GOAL=200,now=new Date(),day=86400000;
+    var ymd=function(s){if(!s)return null;var a=String(s).slice(0,10).split('-');return a.length===3?new Date(+a[0],+a[1]-1,+a[2]):null;};
+    var tile=function(name,sub,n,start){
+      var pctW=Math.min(100,n/GOAL*100),st=ymd(start),days=st?Math.max(1,Math.round((now-st)/day)):0,pace=days&&n?n/days:0;
+      var eta=n>=GOAL?'<b class="pos">Ready to judge</b>':pace?'on pace for <b>'+(new Date(now.getTime()+Math.ceil((GOAL-n)/pace)*day)).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</b>':'no live plays yet';
+      return '<div class="ck"><div class="k">'+esc(name)+(sub?' <span class="dim">· '+esc(sub)+'</span>':'')+'</div><div class="v n">'+n+'<small> / '+GOAL+'</small></div><div class="ckb"><i style="width:'+pctW.toFixed(1)+'%"></i></div><div class="s">'+eta+'</div></div>';};
+    var g=function(r){r=r||{};return (r.w||0)+(r.l||0)+(r.p||0);};
+    var fl=function(k){var x=(Ls[k]||{}).form||{};return {n:g(x.live),since:x.since||'2026-11-05'};};
+    var f1=fl('FORMAMT'),f2=fl('FORMT'),f3=fl('FORMAM'),f4=fl('FORM');
+    var C=((Ls.ALL||{}).clv||{}),cl=C.lock&&C.lock.n?C.lock:(C.morning||{}),clvD=new Date(2026,10,24),left=Math.ceil((clvD-now)/day);
+    var clvTile='<div class="ck"><div class="k">Closing-line check <span class="dim">· Nov 24</span></div><div class="v n">'+(left>0?left+'<small> days</small>':'<small>due now</small>')+'</div><div class="ckb"><i style="width:'+Math.max(0,Math.min(100,(1-left/22)*100)).toFixed(1)+'%"></i></div><div class="s">beat the close <b class="'+(cl.beatRate>=0.5?'pos':cl.beatRate!=null?'neg':'')+'">'+(cl.beatRate==null?'—':Math.round(cl.beatRate*100)+'%')+'</b> of '+(cl.n||0)+'</div></div>';
+    return '<section class="sec"><div class="sech"><h2>Checkpoints</h2><span>Live graded plays toward ~'+GOAL+' per list · judge on these, not hot streaks</span></div><div class="ckg">'+
+      tile('Morning SIX','one per team',f1.n,f1.since)+tile('Form SIX','one per team',f2.n,f2.since)+tile('Morning SIX','',f3.n,f3.since)+tile('Form SIX','',f4.n,f4.since)+
+      tile('All plays','',g((Ls.ALL||{}).season),'2026-10-28')+tile('Top overs','',g((Ls.OVER||{}).season),'2026-10-28')+tile('Top unders','',g((Ls.UNDER||{}).season),'2026-10-28')+clvTile+'</div></section>';
+  }
   function viewPerformance(d){
     var eras=d.record.eras||{},E=eras[state.era]||{},R=(E.lists&&E.lists[state.list])||d.record,S=R.season||{},L7=R.last7||{};
     var FM=isF(state.list)&&R.form;
@@ -1167,6 +1190,7 @@ var API = (function(){
           '<div><div class="k">Beat the close</div><div class="v n '+(bc.beatRate>=0.5?'pos':bc.beatRate!=null?'neg':'')+'">'+(bc.beatRate==null?'—':Math.round(bc.beatRate*100)+'%')+'</div><div class="s">'+(C0.lock&&C0.lock.n?'at lock':'from the morning line')+'</div></div>'+
           '<div><div class="k">Streak</div><div class="v n '+(st.currentType==='HIT'?'pos':st.currentType==='MISS'?'neg':'')+'">'+(st.current?(st.currentType==='HIT'?'W':'L')+st.current:'—')+'</div><div class="s">best W'+(st.bestW||0)+' · worst L'+(st.bestL||0)+'</div></div>'+luck+'</div></div>';
       })();
+    h+=ckptHtml(d);
     var T=E.topRanked||(eras.all||{}).topRanked;
     var topLn=function(p){var o=p.outcome;return '<div class="ln" style="'+tv(p.team)+'">'+tcolHtml(p)+'<div style="min-width:0"><div class="caps nm">'+esc(p.player)+'</div><div class="s">'+esc(pickTxt(p.direction,p.line,p.stat))+' · '+esc(dayLabel(p.date,{month:'short',day:'numeric'}))+(p.actual!=null?' · '+p.actual:'')+'</div></div><span class="ob '+(o==='HIT'?'h':o==='MISS'?'m':o==='PUSH'?'p':'')+'">'+esc(o||'OPEN')+'</span></div>';};
     if(T&&isF(state.list)){var xf=T[state.list]||{record:{},days:[]},rf=xf.record||{},df=(xf.days||[]).slice(0,9),df=df.length>=3?df.slice(0,df.length-df.length%3):df,cols=[[],[],[]];df.forEach(function(p,i){cols[i%3].push(p);});
