@@ -992,6 +992,8 @@ var API = (function(){
       o.fmTag=f&&m?'BOTH':m?'MORNING':'FORM';o.fmFlag=flag;o.stake=o.fmTag==='BOTH'?(flag?1:2):o.fmTag==='MORNING'?(flag?0:1):1;
       o.morningOdds=mo;o.odds=cur;o.line=b.nowLine!=null?b.nowLine:b.line;o.book=b.nowBook||b.book;o.formPending=!!(f&&!f.locked);o.locksAt=f&&!f.locked?f.locksAt:'';
       return o;});
+    var ft={};out.forEach(function(o){if(o.fmTag==='FORM'&&o.team)ft[o.team]=1;});
+    out.forEach(function(o){if(o.fmTag==='MORNING'&&o.team&&ft[o.team]){o.teamDrop=true;o.stake=0;}});
     var rt={BOTH:0,MORNING:1,FORM:2};out.sort(function(a,b){return (rt[a.fmTag]-rt[b.fmTag])||((a.formRank||9)-(b.formRank||9));});return out;
   }
   function fmcMoney(u){var v=u*(state.unit||3),a=Math.abs(v),t=Math.round(a*100)%100?a.toFixed(2):String(Math.round(a));return (v<0?'−$':'$')+t;}
@@ -999,7 +1001,8 @@ var API = (function(){
     var tags='';
     if(p.fmTag==='BOTH')tags+='<span class="tg b">BOTH LISTS</span>';else tags+='<span class="tg">'+(p.fmTag==='MORNING'?'MORNING SIX':'FORM SIX')+'</span>';
     if(p.morningOdds!=null&&p.fmTag!=='FORM')tags+='<span class="tg">MORNING '+esc(odds(p.morningOdds))+'</span>';
-    if(p.fmFlag)tags+='<span class="tg x">'+esc(p.fmFlag)+(p.stake===0?' · SKIP':'')+'</span>';
+    if(p.teamDrop)tags+='<span class="tg w">SAME TEAM AS A FORM SIX PICK</span>';
+    if(p.fmFlag)tags+='<span class="tg x">'+esc(p.fmFlag)+(p.stake===0&&!p.teamDrop?' · SKIP':'')+'</span>';
     else if(p.morningOdds!=null&&p.odds!=null&&fmcCents(p.odds)>fmcCents(p.morningOdds))tags+='<span class="tg l">BETTER PRICE</span>';
     if(p.teamDup)tags+='<span class="tg w">2ND '+esc(p.team)+' PLAYER</span>';
     if(p.formPending)tags+='<span class="tg">PENDING · CAN CHANGE'+(p.locksAt?' UNTIL '+esc(p.locksAt):'')+'</span>';
@@ -1015,7 +1018,7 @@ var API = (function(){
     var X=d.fmc||{},frozen=(X.card5||[]).length>0,items=frozen?X.card5.slice():fmcCombine(d);
     var seenT={};items.forEach(function(p){if(!p.stake)return;if(seenT[p.team])p.teamDup=true;seenT[p.team]=(seenT[p.team]||0)+1;});
     var dupTeams=Object.keys(seenT).filter(function(t){return seenT[t]>1;});
-    var both=items.filter(function(p){return p.fmTag==='BOTH';}),one=items.filter(function(p){return p.fmTag!=='BOTH'&&p.stake>0;}),skipped=items.filter(function(p){return p.stake===0;});
+    var both=items.filter(function(p){return p.fmTag==='BOTH';}),one=items.filter(function(p){return p.fmTag!=='BOTH'&&p.stake>0;}),skipped=items.filter(function(p){return p.stake===0&&!p.teamDrop;}),tdrop=items.filter(function(p){return p.teamDrop;});
     var bets=items.filter(function(p){return p.stake>0;}),risk=0;bets.forEach(function(p){risk+=p.stake;});
     var pend=items.filter(function(p){return p.formPending;}),nextLock=pend.map(function(p){return p.locksAt;}).filter(Boolean)[0];
     var E=(d.record.eras||{}).all||{},R=(E.lists||{}).FMC||{},S=R.season||{},AB=X.asBet||{};
@@ -1026,7 +1029,7 @@ var API = (function(){
       '<div class="chips"><span class="chip">Unit</span>'+seg('unit',[['2','$2'],['3','$3'],['4','$4'],['5','$5']],String(state.unit||3))+'</div></div>'+
       '<div class="bar">'+seg('list',LISTS,'FMC',true)+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
     h+='<div class="fmt">'+
-      '<div class="ck"><div class="k">Bets tonight</div><div class="v n">'+bets.length+'</div><div class="s">'+both.filter(function(p){return p.stake>0;}).length+' on both lists · '+one.length+' on one'+(skipped.length?' · '+skipped.length+' skipped':'')+'</div></div>'+
+      '<div class="ck"><div class="k">Bets tonight</div><div class="v n">'+bets.length+'</div><div class="s">'+both.filter(function(p){return p.stake>0;}).length+' on both lists · '+one.length+' on one'+(skipped.length+tdrop.length?' · '+(skipped.length+tdrop.length)+' not bet':'')+'</div></div>'+
       '<div class="ck"><div class="k">Total risk</div><div class="v n">'+fmcMoney(risk)+'</div><div class="s">'+risk+' unit'+(risk===1?'':'s')+' at $'+(state.unit||3)+'</div></div>'+
       '<div class="ck"><div class="k">'+(frozen?hrTxt+' card':'Locked so far')+'</div><div class="v n">'+(frozen?'Frozen':(items.length-pend.length)+'<small> / '+items.length+'</small>')+'</div><div class="s">'+(frozen?'saved at '+esc(X.card5At||'')+' · graded as bet':(nextLock?'next lock '+esc(nextLock):'freezes at '+hrTxt+' as your bet card'))+'</div></div>'+
       '<div class="ck"><div class="k">Combined record</div><div class="v n '+cls(S.units)+'">'+units(S.units)+'</div><div class="s">'+wl(S)+' · '+(AB.plays?hrTxt+' card '+wl(AB)+' '+units(AB.units):'1u one list · 2u both lists')+'</div></div></div>';
@@ -1034,9 +1037,10 @@ var API = (function(){
     if(both.length)h+='<section class="sec fmsec"><div class="sech"><h2>On both lists · 2 units</h2><span>Bet once at 2 units (one tax fee). A price flag drops it to 1 unit.</span></div>'+fmcGrid(both)+'</section>';
     if(one.length)h+='<section class="sec fmsec"><div class="sech"><h2>One list · 1 unit</h2><span>Tagged with the list it came from</span></div>'+fmcGrid(one)+'</section>';
     if(skipped.length)h+='<section class="sec fmsec"><div class="sech"><h2>Skipped · price moved</h2><span>Morning price got '+(X.flagCents||15)+'¢+ worse or passed '+odds(X.maxJuice||-130)+'. Tracked so we know if skipping helps.</span></div>'+fmcGrid(skipped)+'</section>';
+    if(tdrop.length)h+='<section class="sec fmsec"><div class="sech"><h2>Same team, not bet</h2><span>One player per team: the Form SIX pick keeps the team. Tracked so we know if the rule helps.</span></div>'+fmcGrid(tdrop)+'</section>';
     if(after.length)h+='<section class="sec"><details class="fold box"><summary class="foldh"><h3>Added after '+hrTxt+' · '+after.length+'</h3><span>Form SIX picks that changed after your card froze. Not in the '+hrTxt+' record.</span></summary>'+fmcGrid(after)+'</details></section>';
     if(dupTeams.length)h+='<div class="fmwarn"><b>Heads up:</b> '+dupTeams.map(function(t){return seenT[t]+' players from '+esc(t);}).join(', ')+' tonight. Each list is one per team on its own; the combined card can double up a team.</div>';
-    h+='<p class="foot">F/M SIX Combined: every Morning SIX · 1/team and Form SIX · 1/team pick. On both lists = one 2-unit bet; one list = 1 unit. Morning picks show the morning price; if it has moved '+(X.flagCents||15)+'¢ or more the wrong way (or past '+odds(X.maxJuice||-130)+'), the pick is flagged and skipped. At the first run after '+hrTxt+' CT the card freezes as your bet card and is graded at those prices. Form SIX picks for later games can still change after that; changes show under “Added after '+hrTxt+'.”</p>';
+    h+='<p class="foot">F/M SIX Combined: Morning SIX · 1/team and Form SIX · 1/team, one player per team. On both lists = one 2-unit bet; one list = 1 unit. If the lists pick different players from the same team, the Form SIX pick is bet and the Morning SIX pick is tracked under “Same team, not bet.” Morning picks show the morning price; if it has moved '+(X.flagCents||15)+'¢ or more the wrong way (or past '+odds(X.maxJuice||-130)+'), the pick is flagged and skipped. At the first run after '+hrTxt+' CT the card freezes as your bet card and is graded at those prices. Form SIX picks for later games can still change after that; changes show under “Added after '+hrTxt+'.”</p>';
     return h;
   }
 
@@ -1110,10 +1114,12 @@ var API = (function(){
     var plays;
     if(state.list==='FMC'&&!state.every){var byK={},ord=[];data.plays.forEach(function(p){var L=p.lists||[];if(L.indexOf('FORMT')===-1&&L.indexOf('FORMAMT')===-1)return;if(/^BACKFILL/.test(p.source||''))return;
         var k=p.key||pkey(p);if(!byK[k]){var o={};for(var q in p)o[q]=p[q];o.nb=0;o.units=0;byK[k]=o;ord.push(k);}var x=byK[k];x.nb++;x.units=Math.round(((x.units||0)+(p.units||0))*100)/100;});
-      plays=ord.map(function(k){var x=byK[k];x.why2=x.nb>1?'On both lists · 2 units':'One list · 1 unit';return x;});}
+      var fT={};ord.forEach(function(k){var x=byK[k];if(x.nb===1&&(x.lists||[]).indexOf('FORMT')!==-1&&x.team)fT[x.team]=1;});
+      plays=ord.map(function(k){var x=byK[k];var mOnly=x.nb===1&&(x.lists||[]).indexOf('FORMAMT')!==-1;
+        if(mOnly&&x.team&&fT[x.team]){x.why2='Same team as a Form SIX pick · not bet';x.nb=0;x.units=null;}else x.why2=x.nb>1?'On both lists · 2 units':'One list · 1 unit';return x;});}
     else plays=data.plays.filter(function(p){return state.every?!p.form:onList(p);});
     var graded=plays.filter(function(p){return ['HIT','MISS','PUSH','DNP','VOID'].indexOf(p.outcome)!==-1;});
-    var w=0,l=0,u=0;graded.forEach(function(p){var n=p.nb||1;if(p.outcome==='HIT')w+=n;else if(p.outcome==='MISS')l+=n;u+=p.units||0;});
+    var w=0,l=0,u=0;graded.forEach(function(p){var n=p.nb==null?1:p.nb;if(p.outcome==='HIT')w+=n;else if(p.outcome==='MISS')l+=n;u+=p.units||0;});
     var cooled=(data.cooled||[]).filter(function(x){if(isFF(state.list)&&!state.every)return false;return state.every||state.list==='ALL'||!x.firstLists||!x.firstLists.length||x.firstLists.indexOf(state.list)!==-1;});
     var fm=isFF(state.list)&&!state.every,fmcDay=state.list==='FMC'&&!state.every;
     var morning=fm?[]:(data.replay||[]).filter(function(r){return !r.blocked&&(state.every||onList(r));}),blocked=fm?[]:(data.replay||[]).filter(function(r){return r.blocked;});
@@ -1264,14 +1270,14 @@ var API = (function(){
     var t=function(k,v,c,s){return '<div class="ck"><div class="k">'+k+'</div><div class="v n '+(c||'')+'">'+v+'</div><div class="s">'+s+'</div></div>';};
     return '<section class="sec"><div class="sech"><h2>How the combined card is doing</h2><span>Every pick vs. what you actually bet at '+hrTxt+'</span></div><div class="fmt">'+
       t('All picks',units(S.units),cls(S.units),wl(S)+' · 1u / 2u, official lock prices')+
-      t(hrTxt+' card · as bet',AB.plays?units(AB.units):'—',AB.plays?cls(AB.units):'',AB.plays?wl(AB)+' · '+(AB.unitsRisked||0)+' units risked':'starts with the first frozen card')+
+      t(hrTxt+' card · as bet',AB.plays?units(AB.units):'—',AB.plays?cls(AB.units):'',AB.plays?wl(AB)+' · '+fmcMoney(AB.units||0)+' at $'+(state.unit||3):'starts with the first frozen card')+
       t('Skipped · price moved',SK.plays?units(SK.units):'—',SK.plays?cls(SK.units):'',SK.plays?wl(SK)+' at 1 unit · '+(SK.units>0?'skipping cost you':'skipping saved you'):'nothing skipped yet')+
-      t('In dollars · $'+(state.unit||3)+' unit',AB.plays?fmcMoney(AB.units||0):'—',AB.plays?cls(AB.units):'','5 PM card as bet, before the per-bet tax')+'</div></section>';
+      (function(){var TD=(R.form&&R.form.teamDropped)||{};return t('Same team · not bet',TD.plays?units(TD.units):'—',TD.plays?cls(TD.units):'',TD.plays?wl(TD)+' at 1 unit · '+(TD.units>0?'the rule cost you':'the rule saved you'):'no clashes yet');})()+'</div></section>';
   }
   function viewPerformance(d){
     var eras=d.record.eras||{},E=eras[state.era]||{},R=(E.lists&&E.lists[state.list])||d.record,S=R.season||{},L7=R.last7||{};
     var FM=isFF(state.list)&&R.form,FX=(d.fmc||{});
-    var note=state.list==='FMC'&&R.form?('F/M SIX Combined · Morning SIX + Form SIX one per team, live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/10')+'. A pick on both lists counts twice (2 units), the way it is bet. '+(FX.asBet&&FX.asBet.plays?'5 PM card (as bet, skips removed): '+wl(FX.asBet)+', '+units(FX.asBet.units)+'. Skipped for price: '+wl(FX.skipped)+', '+units((FX.skipped||{}).units)+'.':'The 5 PM card record starts with the first frozen card.')):FM?(listName()+' · separate from the model. '+(R.form.backtest&&R.form.backtest.plays?'Backtest (morning lines, 10/27–11/4): '+wl(R.form.backtest)+', '+units(R.form.backtest.units)+'. ':'')+'Live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/5')+' ('+(baseL(state.list)==='FORMAM'?'frozen each morning':'locked at game time')+(capOn()?', one per team':'')+'): '+wl(R.form.live)+', '+units((R.form.live||{}).units)+'.'):state.era==='current'?'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh when ModelVersion changes.':state.era==='all'?'Every real play since tracking began.':
+    var note=state.list==='FMC'&&R.form?('F/M SIX Combined · Morning SIX + Form SIX one per team, live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/10')+'. One player per team (the Form SIX pick wins a clash); a pick on both lists counts twice (2 units), the way it is bet. '+(FX.asBet&&FX.asBet.plays?'5 PM card (as bet, skips removed): '+wl(FX.asBet)+', '+units(FX.asBet.units)+'. Skipped for price: '+wl(FX.skipped)+', '+units((FX.skipped||{}).units)+'.':'The 5 PM card record starts with the first frozen card.')):FM?(listName()+' · separate from the model. '+(R.form.backtest&&R.form.backtest.plays?'Backtest (morning lines, 10/27–11/4): '+wl(R.form.backtest)+', '+units(R.form.backtest.units)+'. ':'')+'Live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/5')+' ('+(baseL(state.list)==='FORMAM'?'frozen each morning':'locked at game time')+(capOn()?', one per team':'')+'): '+wl(R.form.live)+', '+units((R.form.live||{}).units)+'.'):state.era==='current'?'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh when ModelVersion changes.':state.era==='all'?'Every real play since tracking began.':
       'Not real plays: today’s rules replayed on each graded slate at that morning’s lines.'+(E.blockedCount?' Real plays these rules would have blocked: '+E.blockedCount+' ('+wl(E.blocked)+', '+units((E.blocked||{}).units)+').':'');
     var h='<div class="ph"><h1><small>'+esc(listName())+' · flat 1 unit</small>Record</h1><div class="chips">'+seg('era',ERAS,state.era)+seg('list',LISTS,baseL(state.list),true)+capSeg()+'</div></div>'+
       (function(){
