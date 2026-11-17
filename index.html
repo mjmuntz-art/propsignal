@@ -486,9 +486,13 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .fmp .tg.b{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc)}.fmp .tg.l{background:var(--mint-bg);border-color:var(--mint-line);color:var(--mint)}.fmp .tg.w{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}.fmp .tg.x{background:var(--neg-bg);border-color:var(--neg-line);color:var(--neg)}
 .fmp .fmst{text-align:right}.fmp .amt{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1}.fmp .u{font-size:10.5px;color:var(--ink3);font-weight:800;letter-spacing:.06em;margin-top:2px}
 .badge.fmb{background:var(--panel3);color:var(--ink);border-color:var(--line2);font-weight:800}.badge.fmb.both{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-line)}.badge.fmb.off{color:var(--ink3)}
+.fsum{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;padding:9px 12px;margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13px;color:var(--ink2)}
+.fsum .k{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}.fsum b{font-family:var(--disp);font-size:17px;color:var(--ink)}.fsum b.pos{color:var(--mint)}.fsum b.neg{color:var(--neg)}.fsum small{font-family:var(--text);font-size:11px;color:var(--ink3);font-weight:500}
+.fst.edge{background:var(--acc);color:var(--acc-ink)}.fst.edge .a{font-size:30px}
+.livebox.fl{grid-column:1/-1}.livebox.fl:empty{display:none}.fflags{display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px 2px}.fmv{padding:8px 14px 0;font-size:12.5px;color:var(--ink2)}.fmv:empty{display:none}
 .ffg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.ffg>.ff:last-child:nth-child(odd){grid-column:1/-1}
 .ff{display:grid;grid-template-columns:78px minmax(0,1fr) 92px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:pointer;position:relative}
-.ff.two{border-color:var(--acc-line)}.ff.skip{opacity:.55}.ff.open{grid-column:1/-1;opacity:1}
+.ff.two{border-color:var(--acc-line)}.ff.skip{opacity:.55}.ff.open{opacity:1}
 .fhs{background:linear-gradient(160deg,var(--tc),color-mix(in srgb,var(--tc) 45%,#000));border-right:3px solid var(--tc2);position:relative;overflow:hidden;min-height:96px}
 .fhs .fh{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;max-height:96px;width:auto}
 .fmd{display:flex;flex-direction:column;min-width:0;background:linear-gradient(100deg,color-mix(in srgb,var(--tc) 38%,#0d1219),#141b25 85%);position:relative}
@@ -669,6 +673,10 @@ var API = (function(){
   var STAT={PTS:'pts',REB:'reb',AST:'ast','3PT':'3pm'};
   var LISTS=[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC','F/M SIX Combined']];
   function isFF(l){return isF(l)||l==='FMC';}
+  // P59: ESPN's dark-background team logos everywhere.
+  function darkLogos(o){var seen=0;(function walk(x,depth){if(!x||typeof x!=='object'||depth>8)return;
+    if(Array.isArray(x)){for(var i=0;i<x.length;i++){var v=x[i];if(typeof v==='object')walk(v,depth+1);}return;}
+    for(var k in x){var v=x[k];if(typeof v==='string'){if(v.indexOf('/i/teamlogos/nba/500/')!==-1)x[k]=v.replace('/i/teamlogos/nba/500/','/i/teamlogos/nba/500-dark/');}else if(v&&typeof v==='object')walk(v,depth+1);}})(o,0);return o;}
   // P57: list picker in two labeled groups (model card / Form lists), no sideways scrolling.
   function listPick(name,model,cur,formLab){
     var form=[['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC',formLab||'Combined']];
@@ -718,15 +726,15 @@ var API = (function(){
   // ---- data loading --------------------------------------------------------
   function setUpdating(on){state.updating=on;var b=document.getElementById('refresh');if(b)b.classList.toggle('spin',!!on);}
   function load(fresh){
-    if(window.__CARD_SAMPLE__){state.data=window.__CARD_SAMPLE__;render();return;}
-    if(!state.data){var sc=ls('ps_card_v2');try{sc=sc&&JSON.parse(sc);}catch(e){sc=null;}if(sc&&sc.d){state.data=sc.d;render();}}
+    if(window.__CARD_SAMPLE__){state.data=darkLogos(window.__CARD_SAMPLE__);render();return;}
+    if(!state.data){var sc=ls('ps_card_v2');try{sc=sc&&JSON.parse(sc);}catch(e){sc=null;}if(sc&&sc.d){state.data=darkLogos(sc.d);render();}}
     setUpdating(true);
     API.card(fresh===true,function(d){
       setUpdating(false);
       if(!d||d.ok===false){fail('The card could not load.',esc(d&&d.message||'No data returned.'));return;}
       // P34.1: a card built by older code lacks the fields this board needs; rebuild it once.
       if(!d.days&&!fresh&&!state.rebuilt){state.rebuilt=true;state.notice='Updating to the new board… this can take a minute.';if(!state.data){state.data=d;render();}else renderStatus();load(true);return;}
-      state.notice='';state.data=d;state.loadedAt=Date.now();try{ls('ps_card_v2',JSON.stringify({at:Date.now(),d:d}));}catch(e){}
+      state.notice='';state.data=darkLogos(d);state.loadedAt=Date.now();try{ls('ps_card_v2',JSON.stringify({at:Date.now(),d:d}));}catch(e){}
       render();
     },function(title,detail){setUpdating(false);fail(title,detail);});
   }
@@ -1004,7 +1012,7 @@ var API = (function(){
     if(baseL(state.list)==='FORMAM'){var off0=tonight.filter(function(p){return p.morningView;});
       h+='<p class="note2" style="margin:0 0 14px">'+(off0.length?'Morning SIX: the Form SIX rules run once'+(off0[0].firstAt?' at '+esc(off0[0].firstAt):'')+' this morning, frozen and graded at these morning numbers, the way the backtest was.'+(capOn()?' On slates with 10+ teams, a scratch is filled by the next reserve from a team not already on the list.':' A scratch is filled by the next reserve.')+tcN+' Current prices are on each card.':'The Morning SIX is saved once most of today’s games have odds posted, usually late morning.')+'</p>';}
     if(baseL(state.list)==='FORM')h+='<p class="note2" style="margin:0 0 14px">Form SIX: picks lock game by game at the same time as the main card, after injury news, and are graded at the lock numbers.'+tcN+'</p>';
-    h+=tonight.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(tonight.length%3)+(tonight.length%2?' odd':'')+'" id="cards">'+sorted.map(function(p){return playCard(p,rk[pkey(p)]);}).join('')+'</div>':
+    h+=tonight.length?'<div class="ffg" id="cards">'+sorted.map(function(p){return faceCard(p,rk[pkey(p)]);}).join('')+'</div>':
       '<div class="empty"><b>Nothing on this card yet.</b>Plays appear once today’s xEP tables are imported and the next automation run builds the board. Short slates make short cards.</div>';
     if(isF(state.list)){
       var am=baseL(state.list)==='FORMAM',dk=(am?(capOn()?d.formReservesT:d.formReserves):(capOn()?[]:d.formDeck))||[],fr=d.formRules||{};
@@ -1067,23 +1075,45 @@ var API = (function(){
     if(p.fmTag==='MORNING')return '<b>Morning SIX</b> pick'+(p.firstAt?', locked '+esc(p.firstAt):'')+(mo?' at '+mo:'')+'.';
     return '<b>Form SIX</b> pick'+(p.formPending&&p.locksAt?', can still change until '+esc(p.locksAt):'')+'.';
   }
-  function fmcFace(p){
-    var k=pkey(p),open=state.fmOpen===k,c=p.ctx||{},over=p.direction==='Over',n=String(p.player||'').length;
-    var nmc=n<=14?'':'m';
+  var RKL={ALL:'All',OVER:'Over',UNDER:'Under',FORM:'Form SIX',FORMAM:'Morning SIX',FORMT:'Form SIX',FORMAMT:'Morning SIX'};
+  function keyFlags(p){var c=p.ctx||{},f=[];function fl(t,cl){f.push('<span class="flag'+(cl?' '+cl:'')+'">'+t+'</span>');}
+    if(p.form&&p.gapPct!=null)fl('Form gap <b>'+Math.round(p.gapPct*100)+'%</b>','good');
+    if(!p.form&&c.formSignal!=null)fl('Form signal <b>'+c.formSignal+'%</b>','good');
+    if(p.noteConflict==='NOTE_PLAY')fl('Listed '+esc(p.status||'OUT')+', but the note says he’ll play','warn');
+    if(p.noteConflict==='NOTE_OUT')fl('Listed '+esc(p.status||'active')+', but the note says he’s out','bad');
+    if(p.form&&!p.morningView&&p.morningPick===true)fl('Also on Morning SIX');
+    if(p.morningView&&!p.replacedBy&&p.lockStatus==='LOCKED')fl('Also on Form SIX');else if(p.morningView&&p.lockStatus==='ON')fl('On Form SIX for now');
+    if(p.replaces)fl('Replaces <b>'+esc(p.replaces)+'</b>','good');if(p.replacedBy)fl('Spot filled by <b>'+esc(p.replacedBy)+'</b>');
+    if(c.roleUp)fl('Role up: <b>'+esc(c.roleUp)+' out</b>','good');
+    if(c.xepLine!=null&&p.line!=null&&c.xepLine!==p.line)fl('xEP line <b>'+c.xepLine+'</b>');
+    if(c.matchup)fl(esc(words(c.matchup))+(c.matchupPct!=null?' '+signed(c.matchupPct*100,0)+'%':'')+' matchup');
+    if(c.starter)fl(c.starter==='S'?'Starter':'Bench');
+    return f.length?'<div class="fflags">'+f.join('')+'</div>':'';}
+  function faceCard(p,rank){return fmcFace(p,rank);}
+  function fmcFace(p,rank){
+    var k=pkey(p),open=state.full||state.fmOpen===k,c=p.ctx||{},over=p.direction==='Over',n=String(p.player||'').length,fmc=!!p.fmTag;
+    var nmc=n<=14?'':'m',isVoid=p.outcome==='VOID',outNow=!isVoid&&/^(OUT|DOUBTFUL|INACTIVE|SUSPENDED)$/.test(p.status||''),g0=state.live.games[p.espnGameId],isLive=g0&&g0.state==='in';
     var b=[];
-    b.push(p.fmTag==='BOTH'?'<span class="fb g">Both lists</span>':'<span class="fb">'+(p.fmTag==='MORNING'?'Morning SIX':'Form SIX')+'</span>');
+    if(fmc)b.push(p.fmTag==='BOTH'?'<span class="fb g">Both lists</span>':'<span class="fb">'+(p.fmTag==='MORNING'?'Morning SIX':'Form SIX')+'</span>');
+    else if(rank)b.push('<span class="fb g">#'+rank+' '+esc(RKL[state.list]||'')+'</span>');
+    if(isVoid)b.push('<span class="fb x">Void</span>');else if(outNow)b.push('<span class="fb x">'+esc(p.status)+' · will void</span>');
+    if(isLive)b.push('<span class="fb x">● Live</span>');
+    if(!fmc&&p.noteConflict==='NOTE_OUT')b.push('<span class="fb x">Note says out</span>');
     if(p.teamDrop)b.push('<span class="fb w">Same team</span>');
     else if(p.fmFlag)b.push('<span class="fb x">'+esc(p.fmFlag)+'</span>');
     if(p.outcome)b.push('<span class="fb '+(p.outcome==='HIT'?'g':p.outcome==='MISS'?'x':'')+'">'+esc(p.outcome)+(p.actual!=null?' · '+p.actual:'')+'</span>');
     var sh=function(t){return String(t||'').replace(/\s?(AM|PM)$/i,function(m){return m.trim().toLowerCase()==='am'?'a':'p';});};
-    if(!p.outcome&&p.formPending)b.push('<span class="fb o">Locks '+esc(sh(p.locksAt))+'</span>');
-    else if(!p.outcome)b.push('<span class="fb l">Locked '+esc(sh(p.fmTag==='MORNING'?(p.firstAt||''):(p.lockedAt||p.firstAt||'')))+'</span>');
-    var h='<div class="ff'+(p.fmTag==='BOTH'&&p.stake?' two':'')+(p.stake?'':' skip')+(open?' open':'')+'" style="'+tv(p.team)+'" data-fmo="'+esc(k)+'">'+
+    var pend=fmc?p.formPending:!p.locked&&!p.morningView;
+    if(!p.outcome&&!isLive&&pend)b.push('<span class="fb o">Locks '+esc(sh(p.locksAt))+'</span>');
+    else if(!p.outcome&&!isLive)b.push('<span class="fb l">Locked '+esc(sh(p.morningView||p.fmTag==='MORNING'?(p.firstAt||''):(p.lockedAt||p.firstAt||'')))+'</span>');
+    var h='<div class="ff'+(fmc&&p.fmTag==='BOTH'&&p.stake?' two':'')+(fmc&&!p.stake||isVoid?' skip':'')+(open?' open':'')+'" style="'+tv(p.team)+'" data-fmo="'+esc(k)+'">'+
       '<div class="fhs">'+(p.teamLogo?'<img class="flg" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+(p.headshot?'<img class="fh" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':'')+'</div>'+
       '<div class="fmd">'+
         '<div class="fwho"><div class="fbd">'+b.join('')+'</div><div class="fnm '+nmc+'">'+esc(p.player)+'</div><div class="fmt">'+esc(p.team||'')+(p.opp?(venueOf(p)==='A'?' @ ':' vs ')+esc(p.opp):'')+(p.tip?' · '+esc(p.tip):'')+'</div></div>'+
         '<div class="fbar"><div class="fpk"><span class="'+(over?'ov':'')+'">'+(over?'OVER':'UNDER')+'</span> '+(p.line==null?'—':p.line)+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></div><div class="fpx">'+esc(odds(p.odds))+'<small>'+esc(p.book||'')+'</small></div></div></div>'+
-      '<div class="fst"><div class="a">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'NOT BET')+'</div></div>';
+      (fmc?'<div class="fst"><div class="a">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'NOT BET')+'</div></div>':
+        '<div class="fst edge"><div class="u">EDGE</div><div class="a">'+(p.edge==null?'—':pts(p.edge))+'</div>'+(p.grade?'<div class="u">'+esc(p.grade)+'</div>':'')+'</div>')+
+      '<div class="livebox fl" data-live="'+esc(k)+'">'+liveHtml(p)+'</div>';
     if(open){
       var fm=form(p),proj=p.proj,gap=(proj!=null&&p.line!=null)?(over?proj-p.line:p.line-proj):null;
       h+='<div class="fex"><div class="fs4">'+
@@ -1092,7 +1122,7 @@ var API = (function(){
         '<div><div class="k">L10</div><div class="v">'+(fm&&fm.n?fm.h+'/'+fm.n:esc(p.l5||'—'))+'</div><div class="s">'+(over?'over ':'under ')+(p.line==null?'':p.line)+'</div></div>'+
         '<div><div class="k">Min</div><div class="v">'+(c.projMin==null?'—':Math.round(c.projMin))+'</div><div class="s">'+esc(words(c.minTrend||'')||'projected').toLowerCase()+'</div></div></div>'+
         '<div class="ftm">'+tmoStrip(p)+'</div>'+
-        '<div class="fwhy">'+fmcWhy(p)+'</div>'+
+        (fmc?'<div class="fwhy">'+fmcWhy(p)+'</div>':'<div class="fmv">'+(typeof moveHtml==='function'?moveHtml(p):'')+'</div>'+keyFlags(p))+
         '<div class="fgo"><button data-fmfull="'+esc(k)+'">'+(state.fmFull===k?'Hide research ▴':'Full research ▾')+'</button></div>'+
         (state.fmFull===k?'<div class="fdet">'+detail(p)+'</div>':'')+'</div>';
     }
@@ -1115,7 +1145,11 @@ var API = (function(){
     var h='<div class="ph"><h1><small>'+esc(dayLabel(d.today,{weekday:'long',month:'long',day:'numeric'}))+' · Morning SIX + Form SIX, one per team</small>F/M SIX Combined</h1>'+
       '<div class="chips"><span class="chip">Unit</span>'+seg('unit',[['2','$2'],['3','$3'],['4','$4'],['5','$5']],String(state.unit||3))+'</div></div>'+
       listPick('list',[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders']],'FMC')+toolRow(seg('rview',[['compact','Compact'],['full','Research']],state.full?'full':'compact'));
-    h+='<div class="fmt">'+
+    var sm=function(k,v,c){return '<span><span class="k">'+k+'</span> <b class="'+(c||'')+'">'+v+'</b></span>';};
+    h+='<div class="fsum">'+sm('Bets',bets.length+(skipped.length+tdrop.length?' <small>(+'+(skipped.length+tdrop.length)+' not bet)</small>':''))+sm('Risk',fmcMoney(risk))+
+      sm(frozen?hrTxt+' card':'Locked',frozen?'frozen '+esc(X.card5At||''):(items.length-pend.length)+'/'+items.length+(nextLock?' <small>· next '+esc(nextLock)+'</small>':''))+
+      sm('Record',units(S.units),cls(S.units))+'</div>';
+    if(0)h+='<div class="fmt">'+
       '<div class="ck"><div class="k">Bets tonight</div><div class="v n">'+bets.length+'</div><div class="s">'+both.filter(function(p){return p.stake>0;}).length+' on both lists · '+one.length+' on one'+(skipped.length+tdrop.length?' · '+(skipped.length+tdrop.length)+' not bet':'')+'</div></div>'+
       '<div class="ck"><div class="k">Total risk</div><div class="v n">'+fmcMoney(risk)+'</div><div class="s">'+risk+' unit'+(risk===1?'':'s')+' at $'+(state.unit||3)+'</div></div>'+
       '<div class="ck"><div class="k">'+(frozen?hrTxt+' card':'Locked so far')+'</div><div class="v n">'+(frozen?'Frozen':(items.length-pend.length)+'<small> / '+items.length+'</small>')+'</div><div class="s">'+(frozen?'saved at '+esc(X.card5At||'')+' · graded as bet':(nextLock?'next lock '+esc(nextLock):'freezes at '+hrTxt+' as your bet card'))+'</div></div>'+
@@ -1155,7 +1189,7 @@ var API = (function(){
     }
     if(state.days[date]){cb(state.days[date]);return;}
     cb(null);
-    API.day(date,function(x){if(x&&x.ok!==false){state.days[date]=x;if(state.view==='results'&&state.date===date)render();}});
+    API.day(date,function(x){if(x&&x.ok!==false){state.days[date]=darkLogos(x);if(state.view==='results'&&state.date===date)render();}});
   }
   // P34: month calendar, each day shaded by units won or lost.
   function monthView(d){
