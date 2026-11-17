@@ -479,6 +479,7 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .fmp .fmtags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}.fmp .tg{font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:5px;border:1px solid var(--line2);color:var(--ink2)}
 .fmp .tg.b{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc)}.fmp .tg.l{background:var(--mint-bg);border-color:var(--mint-line);color:var(--mint)}.fmp .tg.w{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}.fmp .tg.x{background:var(--neg-bg);border-color:var(--neg-line);color:var(--neg)}
 .fmp .fmst{text-align:right}.fmp .amt{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1}.fmp .u{font-size:10.5px;color:var(--ink3);font-weight:800;letter-spacing:.06em;margin-top:2px}
+.badge.fmb{background:var(--panel3);color:var(--ink);border-color:var(--line2);font-weight:800}.badge.fmb.both{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-line)}.badge.fmb.off{color:var(--ink3)}
 .fmwarn{margin:4px 0 12px;padding:9px 12px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-line);color:var(--ink2);font-size:12.5px}.fmwarn b{color:var(--amber)}.ck{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .ck .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.ck .k .dim{text-transform:none;letter-spacing:0;font-weight:500}
 .ck .v{font-size:26px;font-weight:800;margin:4px 0 6px}.ck .v small{font-size:13px;font-weight:600;color:var(--ink2)}.ck .s{font-size:12px;color:var(--ink2);margin-top:6px}
@@ -822,7 +823,8 @@ var API = (function(){
     var g=state.live.games[p.espnGameId],isLive=g&&g.state==='in';
     var badge=p.morningView&&!isVoid&&!outNow&&!isLive?'<span class="badge lock">LOCKED'+(p.firstAt?' '+esc(p.firstAt):'')+'</span>':isVoid?'<span class="badge out">VOID</span>':outNow?'<span class="badge out">'+esc(String(p.status))+' · WILL VOID</span>':
       isLive?'<span class="badge live"><i></i>LIVE</span>':p.locked?'<span class="badge lock">LOCKED '+esc(p.lockedAt||'')+'</span>':'<span class="badge open">LOCKS ~'+esc(p.locksAt||'')+'</span>';
-    var rk=rank?'<span class="badge">#'+rank+' '+(state.list==='ALL'?'ALL':state.list==='OVER'?'OVER':'UNDER')+'</span>':'';
+    var rk=p.fmTag?'<span class="badge fmb'+(p.fmTag==='BOTH'?' both':'')+(p.stake?'':' off')+'">'+(p.stake?fmcMoney(p.stake)+' · '+p.stake+' UNIT'+(p.stake>1?'S':''):'NOT BET')+'</span>':
+      rank?'<span class="badge">#'+rank+' '+(state.list==='ALL'?'ALL':state.list==='OVER'?'OVER':'UNDER')+'</span>':'';
     var fm=form(p),proj=p.proj,gap=(proj!=null&&p.line!=null)?(p.direction==='Over'?proj-p.line:p.line-proj):null;
     var tiles=
       '<div class="tile hero"><div class="k">Edge</div><div class="v n">'+pts(p.edge)+'</div><div class="s">'+pct(p.modelP,0)+' hit chance, '+pct(p.breakEven,0)+' needed</div>'+
@@ -832,6 +834,11 @@ var API = (function(){
       '<div class="tile"><div class="k">Minutes</div><div class="v n">'+(c.projMin==null?'—':Math.round(c.projMin))+'</div><div class="s">projected'+(c.matchup?' · '+words(c.matchup)+(c.matchupPct!=null?' '+signed(c.matchupPct*100,0)+'%':'')+' matchup':'')+'</div></div>';
     var flags=[];
     function flag(t,cl){flags.push('<span class="flag'+(cl?' '+cl:'')+'">'+t+'</span>');}
+    if(p.fmTag){flag(p.fmTag==='BOTH'?'<b>On both lists</b> · 2 units':p.fmTag==='MORNING'?'<b>Morning SIX</b> only · 1 unit':'<b>Form SIX</b> only · 1 unit',p.fmTag==='BOTH'?'good':'');
+      if(p.morningOdds!=null&&p.fmTag!=='FORM')flag('Morning price <b>'+odds(p.morningOdds)+'</b>'+(p.odds!=null&&p.odds!==p.morningOdds?' → now <b>'+odds(p.odds)+'</b>':''),p.fmFlag?'bad':(p.odds!=null&&fmcCents(p.odds)>fmcCents(p.morningOdds)?'good':''));
+      if(p.fmFlag)flag('<b>'+esc(p.fmFlag)+'</b> · '+(p.teamDrop?'':p.stake===0?'skipped':'dropped to 1 unit'),'bad');
+      if(p.teamDrop)flag('<b>Same team</b> as a Form SIX pick · not bet','warn');
+      if(p.teamDup)flag('<b>2nd '+esc(p.team)+' player</b> on the card','warn');}
     if(!p.form&&c.formSignal!=null)flag('Form signal <b>'+c.formSignal+'%</b>','good');
     if(p.form&&p.gapPct!=null)flag('Form gap <b>'+Math.round(p.gapPct*100)+'%</b>','good');
     if(p.form&&!p.morningView&&p.morningPick===true)flag('Also on Morning SIX');
@@ -848,7 +855,7 @@ var API = (function(){
     if(c.starter)flag(c.starter==='S'?'<b>Starter</b>':'Bench');
     if(c.minTrend&&!/STABLE/.test(c.minTrend))flag('Minutes <b>'+esc(words(c.minTrend))+'</b>',/UP|RIS/.test(c.minTrend)?'good':'warn');
     if(c.xepInjury)flag('xEP tag <b>'+esc(c.xepInjury)+'</b>','warn');
-    if(p.lists&&p.lists.length)flag(esc(p.lists.map(function(l){return l==='ALL'?'All':l==='OVER'?'Overs':'Unders';}).join(' · ')));
+    var lsx=(p.lists||[]).filter(function(l){return l==='ALL'||l==='OVER'||l==='UNDER';});if(lsx.length)flag(esc(lsx.map(function(l){return l==='ALL'?'All':l==='OVER'?'Overs':'Unders';}).join(' · ')));
     var lk=isVoid?'<span class="lk bad">Ruled out after lock · 0 units</span>':outNow?'<span class="lk bad">Listed '+esc(String(p.status).toLowerCase())+' · will void</span>':
       p.morningView?'<span class="lk on">Morning SIX · locked '+esc(p.firstAt||'this morning')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':p.locked?'<span class="lk on">Locked '+esc(p.lockedAt||'')+(p.tip?' · tips '+esc(p.tip):'')+'</span>':'<span class="lk off">Can change until ~'+esc(p.locksAt||'lock')+'</span>';
     var ropen=state.full?state.ropen[pkey(p)]!==false:!!state.ropen[pkey(p)];
@@ -1013,9 +1020,11 @@ var API = (function(){
       '<div class="fmpr"><b>'+esc(pickTxt(p.direction,p.line,p.stat))+'</b> · '+esc(odds(p.odds))+(p.book?' · '+esc(p.book):'')+'</div><div class="fmtags">'+tags+'</div></div>'+
       '<div class="fmst"><div class="amt">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'SKIP')+'</div></div></div>';
   }
-  function fmcGrid(list){return list.length?'<div class="fmg">'+list.map(fmcCard).join('')+'</div>':'';}
+  function fmcGrid(list){return list.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(list.length%3)+(list.length%2?' odd':'')+'">'+list.map(function(p){return playCard(p,0);}).join('')+'</div>':'';}
   function fmcTonight(d){
     var X=d.fmc||{},frozen=(X.card5||[]).length>0,items=frozen?X.card5.slice():fmcCombine(d);
+    if(frozen){var tk={};(d.tonight||[]).forEach(function(v){if(v.key&&!tk[v.key])tk[v.key]=v;});
+      items=items.map(function(p){var t=tk[p.key]||{},o={};for(var q in t)o[q]=t[q];for(var q2 in p)if(p[q2]!==''&&p[q2]!=null)o[q2]=p[q2];o.locked=true;o.morningView=false;return o;});}
     var seenT={};items.forEach(function(p){if(!p.stake)return;if(seenT[p.team])p.teamDup=true;seenT[p.team]=(seenT[p.team]||0)+1;});
     var dupTeams=Object.keys(seenT).filter(function(t){return seenT[t]>1;});
     var both=items.filter(function(p){return p.fmTag==='BOTH';}),one=items.filter(function(p){return p.fmTag!=='BOTH'&&p.stake>0;}),skipped=items.filter(function(p){return p.stake===0&&!p.teamDrop;}),tdrop=items.filter(function(p){return p.teamDrop;});
@@ -1039,7 +1048,7 @@ var API = (function(){
     if(skipped.length)h+='<section class="sec fmsec"><div class="sech"><h2>Skipped · price moved</h2><span>Morning price got '+(X.flagCents||15)+'¢+ worse or passed '+odds(X.maxJuice||-130)+'. Tracked so we know if skipping helps.</span></div>'+fmcGrid(skipped)+'</section>';
     if(tdrop.length)h+='<section class="sec fmsec"><div class="sech"><h2>Same team, not bet</h2><span>One player per team: the Form SIX pick keeps the team. Tracked so we know if the rule helps.</span></div>'+fmcGrid(tdrop)+'</section>';
     if(after.length)h+='<section class="sec"><details class="fold box"><summary class="foldh"><h3>Added after '+hrTxt+' · '+after.length+'</h3><span>Form SIX picks that changed after your card froze. Not in the '+hrTxt+' record.</span></summary>'+fmcGrid(after)+'</details></section>';
-    if(dupTeams.length)h+='<div class="fmwarn"><b>Heads up:</b> '+dupTeams.map(function(t){return seenT[t]+' players from '+esc(t);}).join(', ')+' tonight. Each list is one per team on its own; the combined card can double up a team.</div>';
+    if(dupTeams.length)h+='<div class="fmwarn"><b>Heads up:</b> '+dupTeams.map(function(t){return seenT[t]+' players from '+esc(t);}).join(', ')+' tonight. Check before betting.</div>';
     h+='<p class="foot">F/M SIX Combined: Morning SIX · 1/team and Form SIX · 1/team, one player per team. On both lists = one 2-unit bet; one list = 1 unit. If the lists pick different players from the same team, the Form SIX pick is bet and the Morning SIX pick is tracked under “Same team, not bet.” Morning picks show the morning price; if it has moved '+(X.flagCents||15)+'¢ or more the wrong way (or past '+odds(X.maxJuice||-130)+'), the pick is flagged and skipped. At the first run after '+hrTxt+' CT the card freezes as your bet card and is graded at those prices. Form SIX picks for later games can still change after that; changes show under “Added after '+hrTxt+'.”</p>';
     return h;
   }
