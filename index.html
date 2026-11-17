@@ -70,6 +70,12 @@ h1,h2,h3{margin:0;text-wrap:balance}
 
 /* controls */
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.lpk{display:grid;grid-template-columns:3fr 3fr;gap:8px 14px;margin:0 0 10px}.lpk .lg{min-width:0}
+.lgl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:0 2px 5px}
+.lpk .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;max-width:none;overflow:visible}.lpk .seg button{white-space:nowrap;text-align:center}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.tools .seg{flex:1 1 0;min-width:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;max-width:none;overflow:visible}.tools .seg button{text-align:center;white-space:nowrap}
+@media(min-width:900px){.tools .seg{flex:0 0 auto;display:inline-flex}}
+@media(max-width:700px){.tools .seg:has(button:nth-child(3)){flex-basis:100%}.lpk{grid-template-columns:1fr}.lpk .seg button,.tools .seg button{font-size:12.5px;padding:8px 4px}}
 .sortlab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
 .sortbox{display:flex;align-items:center;gap:10px}.sortbox .sortlab{margin-left:0}.sortbox.pso{margin-left:auto}
 @media(max-width:640px){.sortbox.pso{margin-left:0;width:100%}.bar .search{width:100%}}
@@ -639,6 +645,13 @@ var API = (function(){
   var STAT={PTS:'pts',REB:'reb',AST:'ast','3PT':'3pm'};
   var LISTS=[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC','F/M SIX Combined']];
   function isFF(l){return isF(l)||l==='FMC';}
+  // P57: list picker in two labeled groups (model card / Form lists), no sideways scrolling.
+  function listPick(name,model,cur,formLab){
+    var form=[['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC',formLab||'Combined']];
+    var g=function(lab,opts){return '<div class="lg"><div class="lgl">'+lab+'</div>'+seg(name,opts,cur,true)+'</div>';};
+    return '<div class="lpk">'+g('Model card',model)+g('Form lists',form)+'</div>';
+  }
+  function toolRow(){var x=Array.prototype.slice.call(arguments).filter(Boolean).join('');return x?'<div class="tools">'+x+'</div>':'';}
   function isF(l){return /^FORM/.test(l||'');}
   function baseL(l){return l==='FORMT'?'FORM':l==='FORMAMT'?'FORMAM':l;}
   function capOn(){return state.list==='FORMT'||state.list==='FORMAMT';}
@@ -962,7 +975,7 @@ var API = (function(){
     var h='<div class="ph"><h1><small>'+esc(dayLabel(d.today,{weekday:'long',month:'long',day:'numeric'}))+'</small>Tonight’s card</h1>'+
       '<div class="chips"><span class="chip"><b>'+tonight.length+'</b> play'+(tonight.length===1?'':'s')+'</span><span class="chip mint"><b>'+lockedN+'</b> locked</span>'+(pend.length?'<span class="chip amb">'+pend.length+' can still change'+(nextLock?' · next lock ~'+esc(nextLock):'')+'</span>':'')+
       '<span class="chip">Record <b class="n">'+wl(S)+'</b> <b class="n '+cls(S.units)+'">'+units(S.units)+'</b></span></div></div>'+
-      '<div class="bar">'+seg('list',LISTS,baseL(state.list),true)+capSeg()+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
+      listPick('list',[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders']],baseL(state.list))+toolRow(capSeg(),seg('rview',[['compact','Compact'],['full','Research']],state.full?'full':'compact'));
     var tcN=capOn()?' Capped at one play per team; the next-best prop from another team fills the spot.':'';
     if(baseL(state.list)==='FORMAM'){var off0=tonight.filter(function(p){return p.morningView;});
       h+='<p class="note2" style="margin:0 0 14px">'+(off0.length?'Morning SIX: the Form SIX rules run once'+(off0[0].firstAt?' at '+esc(off0[0].firstAt):'')+' this morning, frozen and graded at these morning numbers, the way the backtest was.'+(capOn()?' On slates with 10+ teams, a scratch is filled by the next reserve from a team not already on the list.':' A scratch is filled by the next reserve.')+tcN+' Current prices are on each card.':'The Morning SIX is saved once most of today’s games have odds posted, usually late morning.')+'</p>';}
@@ -1036,7 +1049,7 @@ var API = (function(){
     var hr=X.hour||17,hrTxt=(hr>12?hr-12:hr)+' PM';
     var h='<div class="ph"><h1><small>'+esc(dayLabel(d.today,{weekday:'long',month:'long',day:'numeric'}))+' · Morning SIX + Form SIX, one per team</small>F/M SIX Combined</h1>'+
       '<div class="chips"><span class="chip">Unit</span>'+seg('unit',[['2','$2'],['3','$3'],['4','$4'],['5','$5']],String(state.unit||3))+'</div></div>'+
-      '<div class="bar">'+seg('list',LISTS,'FMC',true)+seg('rview',[['compact','Compact'],['full','Full research']],state.full?'full':'compact')+'</div>';
+      listPick('list',[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders']],'FMC')+toolRow(seg('rview',[['compact','Compact'],['full','Research']],state.full?'full':'compact'));
     h+='<div class="fmt">'+
       '<div class="ck"><div class="k">Bets tonight</div><div class="v n">'+bets.length+'</div><div class="s">'+both.filter(function(p){return p.stake>0;}).length+' on both lists · '+one.length+' on one'+(skipped.length+tdrop.length?' · '+(skipped.length+tdrop.length)+' not bet':'')+'</div></div>'+
       '<div class="ck"><div class="k">Total risk</div><div class="v n">'+fmcMoney(risk)+'</div><div class="s">'+risk+' unit'+(risk===1?'':'s')+' at $'+(state.unit||3)+'</div></div>'+
@@ -1114,7 +1127,7 @@ var API = (function(){
       var p=x.date.split('-'),dt=new Date(+p[0],+p[1]-1,+p[2]);
       return '<button class="day2 '+cl+'" data-date="'+x.date+'" aria-pressed="'+(state.date===x.date)+'"><span class="t"><span class="dw">'+dt.toLocaleDateString(undefined,{weekday:'short'})+'</span><span class="dd n">'+dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</span></span><span class="b n">'+(r.plays?wl(r):'—')+'</span></button>';
     }).join('');
-    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1><div class="chips">'+seg('rlist',[['ALL','Top '+(((state.data||{}).rules||{}).maxPlays||5)],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC','F/M Combined'],['EVERY','Every play']],state.every?'EVERY':baseL(state.list),true)+(state.every?'':capSeg())+'</div></div>'+
+    var h='<div class="ph"><h1><small>Graded slates</small>Results</h1></div>'+listPick('rlist',[['ALL','Top '+(((state.data||{}).rules||{}).maxPlays||5)],['OVER','Top overs'],['UNDER','Top unders'],['EVERY','Every play']],state.every?'EVERY':baseL(state.list))+toolRow(state.every?'':capSeg())+
       (days.length?'<div class="rail" id="rail">'+rail+'</div>':'')+monthView(d)+
       '<div class="bar"><label class="pickdate">Jump to a date <input type="date" id="pickdate" value="'+esc(state.date||'')+'" max="'+esc(d.today||'')+'"></label></div>';
     if(!state.date)return h+'<div class="empty"><b>No graded plays yet.</b>Plays are graded automatically after their games finish, usually by the next morning.</div>';
@@ -1160,7 +1173,7 @@ var API = (function(){
     var era=state.pera||'all';
     var E=(d.record.eras||{})[era]||{},P=(isFF(state.list)?(E[{FORM:'playersForm',FORMAM:'playersFormAM',FORMT:'playersFormT',FORMAMT:'playersFormAMT',FMC:'playersFMC'}[state.list]]||[]):(E.players||[])).filter(function(p){return state.list==='ALL'||isFF(state.list)||p.lists[state.list];});
     if(state.pq)P=P.filter(function(p){return (p.player+' '+p.team).toLowerCase().indexOf(state.pq)!==-1;});
-    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1><div class="chips">'+seg('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders'],['FORM','Form SIX'],['FORMAM','Morning SIX'],['FMC','F/M Combined']],baseL(state.list),true)+capSeg()+seg('pera',[['all','All-time'],['current','Current rules']],era)+'</div></div>'+
+    var h='<div class="ph"><h1><small>Everyone who has made a locked card</small>Players</h1></div>'+listPick('list',[['ALL','Every list'],['OVER','Top overs'],['UNDER','Top unders']],baseL(state.list))+toolRow(capSeg(),seg('pera',[['all','All-time'],['current','Current rules']],era))+
       '<div class="bar"><input class="search" id="pq" type="search" placeholder="Search player or team" value="'+esc(state.pq)+'"><span class="sortbox pso"><span class="sortlab">Sort</span>'+seg('psort',[['units','Units'],['hit','Hit rate'],['plays','Plays'],['name','A–Z']],state.psort)+'</span></div>';
     var rOf=function(p){return state.list==='ALL'?p.record:(p.lists[state.list]||p.record);};
     P=P.slice().sort(function(a,b){var ra=rOf(a),rb=rOf(b);
@@ -1288,7 +1301,7 @@ var API = (function(){
     var FM=isFF(state.list)&&R.form,FX=(d.fmc||{});
     var note=state.list==='FMC'&&R.form?('F/M SIX Combined · Morning SIX + Form SIX one per team, live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/10')+'. One player per team (the Form SIX pick wins a clash); a pick on both lists counts twice (2 units), the way it is bet. '+(FX.asBet&&FX.asBet.plays?'5 PM card (as bet, skips removed): '+wl(FX.asBet)+', '+units(FX.asBet.units)+'. Skipped for price: '+wl(FX.skipped)+', '+units((FX.skipped||{}).units)+'.':'The 5 PM card record starts with the first frozen card.')):FM?(listName()+' · separate from the model. '+(R.form.backtest&&R.form.backtest.plays?'Backtest (morning lines, 10/27–11/4): '+wl(R.form.backtest)+', '+units(R.form.backtest.units)+'. ':'')+'Live since '+esc(R.form.since?dayLabel(R.form.since,{month:'numeric',day:'numeric'}):'11/5')+' ('+(baseL(state.list)==='FORMAM'?'frozen each morning':'locked at game time')+(capOn()?', one per team':'')+'): '+wl(R.form.live)+', '+units((R.form.live||{}).units)+'.'):state.era==='current'?'Plays made under the rules now in force ('+esc(E.version||'')+'). Starts fresh when ModelVersion changes.':state.era==='all'?'Every real play since tracking began.':
       'Not real plays: today’s rules replayed on each graded slate at that morning’s lines.'+(E.blockedCount?' Real plays these rules would have blocked: '+E.blockedCount+' ('+wl(E.blocked)+', '+units((E.blocked||{}).units)+').':'');
-    var h='<div class="ph"><h1><small>'+esc(listName())+' · flat 1 unit</small>Record</h1><div class="chips">'+seg('era',ERAS,state.era)+seg('list',LISTS,baseL(state.list),true)+capSeg()+'</div></div>'+
+    var h='<div class="ph"><h1><small>'+esc(listName())+' · flat 1 unit</small>Record</h1></div>'+listPick('list',[['ALL','All'],['OVER','Top overs'],['UNDER','Top unders']],baseL(state.list))+toolRow(seg('era',ERAS,state.era),capSeg())+
       (function(){
         var X0=R.extras||{},st=X0.streaks||{},C0=R.clv||{},bc=(C0.lock&&C0.lock.n?C0.lock:C0.morning)||{};
         var luck='';if(S.expN){var mx=Math.max(S.expN,1),df=S.w-S.exp;luck='<div class="luck2"><div class="k">Luck meter · '+S.w+' won vs '+S.exp.toFixed(1)+' expected</div><div class="lk2"><i style="width:'+(S.exp/mx*100).toFixed(1)+'%"></i><em style="left:'+(S.w/mx*100).toFixed(1)+'%;background:'+(df>=0?'var(--mint)':'var(--neg)')+'"></em></div><div class="s" style="margin-top:6px">'+(Math.abs(df)<0.75?'Right on what the model expected':'<b class="'+(df>0?'pos':'neg')+'">'+Math.abs(df).toFixed(1)+' wins '+(df>0?'above':'below')+'</b> what the model expected')+'</div></div>';}
