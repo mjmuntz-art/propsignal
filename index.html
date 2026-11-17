@@ -486,6 +486,30 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .fmp .tg.b{background:var(--acc-bg);border-color:var(--acc-line);color:var(--acc)}.fmp .tg.l{background:var(--mint-bg);border-color:var(--mint-line);color:var(--mint)}.fmp .tg.w{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}.fmp .tg.x{background:var(--neg-bg);border-color:var(--neg-line);color:var(--neg)}
 .fmp .fmst{text-align:right}.fmp .amt{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1}.fmp .u{font-size:10.5px;color:var(--ink3);font-weight:800;letter-spacing:.06em;margin-top:2px}
 .badge.fmb{background:var(--panel3);color:var(--ink);border-color:var(--line2);font-weight:800}.badge.fmb.both{background:var(--acc-bg);color:var(--acc);border-color:var(--acc-line)}.badge.fmb.off{color:var(--ink3)}
+.ffg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.ffg>.ff:last-child:nth-child(odd){grid-column:1/-1}
+.ff{display:grid;grid-template-columns:78px minmax(0,1fr) 92px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:var(--panel);cursor:pointer;position:relative}
+.ff.two{border-color:var(--acc-line)}.ff.skip{opacity:.55}.ff.open{grid-column:1/-1;opacity:1}
+.fhs{background:linear-gradient(160deg,var(--tc),color-mix(in srgb,var(--tc) 45%,#000));border-right:3px solid var(--tc2);position:relative;overflow:hidden;min-height:96px}
+.fhs .fh{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;max-height:96px;width:auto}
+.fmd{display:flex;flex-direction:column;min-width:0;background:linear-gradient(100deg,color-mix(in srgb,var(--tc) 38%,#0d1219),#141b25 85%);position:relative}
+.flg{position:absolute;left:-10px;top:-10px;width:56px;height:56px;object-fit:contain;opacity:.35}
+.fwho{padding:7px 10px 6px;position:relative}
+.fbd{display:flex;gap:4px;flex-wrap:wrap}.fb{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.04em;padding:1px 6px;border-radius:4px;border:1px solid var(--line2);text-transform:uppercase;background:rgba(0,0,0,.35);color:var(--ink2);line-height:1.35}
+.fb.g{background:var(--mint);color:#062016;border-color:var(--mint)}.fb.l{color:var(--acc);border-color:var(--acc-line)}.fb.o{color:var(--amber);border-color:var(--amber-line)}.fb.x{color:var(--neg);border-color:var(--neg-line);background:rgba(42,22,17,.85)}.fb.w{color:var(--amber);border-color:var(--amber-line);background:rgba(30,25,10,.85)}
+.fnm{font-family:var(--disp);font-weight:800;font-size:21px;line-height:1.02;margin-top:5px;text-transform:uppercase}.fnm.m{font-size:17px}
+.fmt{font-size:10.5px;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbar{margin-top:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;background:var(--bg2);border-top:2px solid var(--tc)}
+.fpk{font-family:var(--disp);font-weight:800;font-size:21px;padding:5px 10px;display:flex;align-items:baseline;gap:5px;text-transform:uppercase;white-space:nowrap}.fpk small{font-size:14px;color:var(--ink2)}.fpk .ov{color:var(--acc)}
+.fpx{font-family:var(--disp);font-weight:800;font-size:20px;line-height:1;padding:4px 10px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;align-items:flex-end;white-space:nowrap}.fpx small{font-family:var(--text);font-weight:600;font-size:10px;color:var(--ink3);margin-top:2px}
+.fst{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel3);border-left:1px solid var(--line)}
+.ff.two .fst{background:var(--acc);color:var(--acc-ink)}.fst .a{font-family:var(--disp);font-weight:800;font-size:36px;line-height:.9}.fst .u{font-size:10px;font-weight:800;letter-spacing:.07em;margin-top:4px;opacity:.85}
+.fex{grid-column:1/-1;border-top:1px solid var(--line);background:var(--panel2);cursor:default}
+.fs4{display:grid;grid-template-columns:repeat(4,1fr)}.fs4>div{padding:9px 12px;border-right:1px solid var(--line)}.fs4>div:last-child{border:0}
+.fs4 .k{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}.fs4 .v{font-family:var(--disp);font-weight:800;font-size:25px;line-height:1.05}.fs4 .s{font-size:11px;color:var(--ink3)}
+.ftm{padding:0 12px}.ftm:empty{display:none}.fwhy{padding:8px 14px 2px;font-size:13px;color:var(--ink2)}.fwhy b{color:var(--ink)}.fwhy .x{color:var(--neg);font-weight:700}
+.fgo{padding:8px 12px 12px}.fgo button{width:100%;border:1px dashed var(--line2);background:none;color:var(--acc);font-weight:700;font-size:13px;padding:10px;border-radius:10px;cursor:pointer}
+.fdet{padding:0 12px 12px}
+@media(max-width:700px){.ffg{grid-template-columns:1fr}.ff{grid-template-columns:64px minmax(0,1fr) 76px}.fst .a{font-size:30px}.fb{font-size:11px;padding:1px 5px}.fwho{padding:7px 8px 5px}.fpk{padding:5px 8px;font-size:20px}.fpx{padding:4px 8px}.fs4>div{padding:8px 8px}.fs4 .v{font-size:22px}}
 .fmwarn{margin:4px 0 12px;padding:9px 12px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-line);color:var(--ink2);font-size:12.5px}.fmwarn b{color:var(--amber)}.ck{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .ck .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.ck .k .dim{text-transform:none;letter-spacing:0;font-weight:500}
 .ck .v{font-size:26px;font-weight:800;margin:4px 0 6px}.ck .v small{font-size:13px;font-weight:600;color:var(--ink2)}.ck .s{font-size:12px;color:var(--ink2);margin-top:6px}
@@ -1033,7 +1057,48 @@ var API = (function(){
       '<div class="fmpr"><b>'+esc(pickTxt(p.direction,p.line,p.stat))+'</b> · '+esc(odds(p.odds))+(p.book?' · '+esc(p.book):'')+'</div><div class="fmtags">'+tags+'</div></div>'+
       '<div class="fmst"><div class="amt">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'SKIP')+'</div></div></div>';
   }
-  function fmcGrid(list){return list.length?'<div class="cards'+(state.entered?'':' enter')+' r'+(list.length%3)+(list.length%2?' odd':'')+'">'+list.map(function(p){return playCard(p,0);}).join('')+'</div>':'';}
+  // P58: compact face cards (A3). Tap to open the quick view; "Full research" opens the game log/research inside.
+  function fmcWhy(p){
+    var mo=p.morningOdds!=null?odds(p.morningOdds):'';
+    if(p.teamDrop)return '<b>Same team</b> as a Form SIX pick, so the Form SIX pick is bet and this one is tracked only.';
+    if(p.fmFlag&&p.fmTag==='BOTH')return '<span class="x">'+esc(p.fmFlag.toLowerCase().replace(/^./,function(c){return c.toUpperCase();}))+'</span>'+(mo?' ('+mo+' this morning)':'')+', so it drops from 2 units to 1.';
+    if(p.fmFlag)return '<span class="x">'+esc(p.fmFlag.toLowerCase().replace(/^./,function(c){return c.toUpperCase();}))+'</span>'+(mo?' ('+mo+' this morning)':'')+', so it is skipped and tracked.';
+    if(p.fmTag==='BOTH')return '<b>On both lists</b>, Morning SIX and Form SIX, so it is a 2-unit bet.';
+    if(p.fmTag==='MORNING')return '<b>Morning SIX</b> pick'+(p.firstAt?', locked '+esc(p.firstAt):'')+(mo?' at '+mo:'')+'.';
+    return '<b>Form SIX</b> pick'+(p.formPending&&p.locksAt?', can still change until '+esc(p.locksAt):'')+'.';
+  }
+  function fmcFace(p){
+    var k=pkey(p),open=state.fmOpen===k,c=p.ctx||{},over=p.direction==='Over',n=String(p.player||'').length;
+    var nmc=n<=14?'':'m';
+    var b=[];
+    b.push(p.fmTag==='BOTH'?'<span class="fb g">Both lists</span>':'<span class="fb">'+(p.fmTag==='MORNING'?'Morning SIX':'Form SIX')+'</span>');
+    if(p.teamDrop)b.push('<span class="fb w">Same team</span>');
+    else if(p.fmFlag)b.push('<span class="fb x">'+esc(p.fmFlag)+'</span>');
+    if(p.outcome)b.push('<span class="fb '+(p.outcome==='HIT'?'g':p.outcome==='MISS'?'x':'')+'">'+esc(p.outcome)+(p.actual!=null?' · '+p.actual:'')+'</span>');
+    var sh=function(t){return String(t||'').replace(/\s?(AM|PM)$/i,function(m){return m.trim().toLowerCase()==='am'?'a':'p';});};
+    if(!p.outcome&&p.formPending)b.push('<span class="fb o">Locks '+esc(sh(p.locksAt))+'</span>');
+    else if(!p.outcome)b.push('<span class="fb l">Locked '+esc(sh(p.fmTag==='MORNING'?(p.firstAt||''):(p.lockedAt||p.firstAt||'')))+'</span>');
+    var h='<div class="ff'+(p.fmTag==='BOTH'&&p.stake?' two':'')+(p.stake?'':' skip')+(open?' open':'')+'" style="'+tv(p.team)+'" data-fmo="'+esc(k)+'">'+
+      '<div class="fhs">'+(p.teamLogo?'<img class="flg" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+(p.headshot?'<img class="fh" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':'')+'</div>'+
+      '<div class="fmd">'+
+        '<div class="fwho"><div class="fbd">'+b.join('')+'</div><div class="fnm '+nmc+'">'+esc(p.player)+'</div><div class="fmt">'+esc(p.team||'')+(p.opp?(venueOf(p)==='A'?' @ ':' vs ')+esc(p.opp):'')+(p.tip?' · '+esc(p.tip):'')+'</div></div>'+
+        '<div class="fbar"><div class="fpk"><span class="'+(over?'ov':'')+'">'+(over?'OVER':'UNDER')+'</span> '+(p.line==null?'—':p.line)+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></div><div class="fpx">'+esc(odds(p.odds))+'<small>'+esc(p.book||'')+'</small></div></div></div>'+
+      '<div class="fst"><div class="a">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'NOT BET')+'</div></div>';
+    if(open){
+      var fm=form(p),proj=p.proj,gap=(proj!=null&&p.line!=null)?(over?proj-p.line:p.line-proj):null;
+      h+='<div class="fex"><div class="fs4">'+
+        '<div><div class="k">Proj</div><div class="v">'+(proj==null?'—':proj)+'</div><div class="s">'+(gap==null?'xEP':(Math.abs(gap)<0.05?'on the line':(gap>0?'+':'−')+Math.abs(gap).toFixed(1)+(over?(gap>0?' above':' below'):(gap>0?' below':' above'))))+'</div></div>'+
+        '<div><div class="k">Hit</div><div class="v">'+(p.modelP==null?'—':Math.round(p.modelP*100)+'%')+'</div><div class="s">need '+pct(p.breakEven,0)+'</div></div>'+
+        '<div><div class="k">L10</div><div class="v">'+(fm&&fm.n?fm.h+'/'+fm.n:esc(p.l5||'—'))+'</div><div class="s">'+(over?'over ':'under ')+(p.line==null?'':p.line)+'</div></div>'+
+        '<div><div class="k">Min</div><div class="v">'+(c.projMin==null?'—':Math.round(c.projMin))+'</div><div class="s">'+esc(words(c.minTrend||'')||'projected').toLowerCase()+'</div></div></div>'+
+        '<div class="ftm">'+tmoStrip(p)+'</div>'+
+        '<div class="fwhy">'+fmcWhy(p)+'</div>'+
+        '<div class="fgo"><button data-fmfull="'+esc(k)+'">'+(state.fmFull===k?'Hide research ▴':'Full research ▾')+'</button></div>'+
+        (state.fmFull===k?'<div class="fdet">'+detail(p)+'</div>':'')+'</div>';
+    }
+    return h+'</div>';
+  }
+  function fmcGrid(list){return list.length?'<div class="ffg">'+list.map(fmcFace).join('')+'</div>':'';}
   function fmcTonight(d){
     var X=d.fmc||{},frozen=(X.card5||[]).length>0,items=frozen?X.card5.slice():fmcCombine(d);
     if(frozen){var tk={};(d.tonight||[]).forEach(function(v){if(v.key&&!tk[v.key])tk[v.key]=v;});
@@ -1477,6 +1542,8 @@ var API = (function(){
     document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.getAttribute('data-go'));};});
     document.querySelectorAll('[data-fcap]').forEach(function(b){b.onclick=function(){state.list=baseL(state.list)+(b.getAttribute('data-fcap')==='team'?'T':'');ls('ps_list',state.list);state.open=null;render();};});
     document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){var v0=b.getAttribute('data-list');state.list=isF(v0)&&capOn()?v0+'T':v0;ls('ps_list',state.list);state.open=null;render();};});
+    document.querySelectorAll('[data-fmo]').forEach(function(el){el.onclick=function(e){if(e.target.closest('[data-fmfull]')||e.target.closest('.fdet')||e.target.closest('[data-tmo],[data-tmos]'))return;var k=el.getAttribute('data-fmo');state.fmOpen=state.fmOpen===k?null:k;if(state.fmOpen!==k)state.fmFull=null;render();};});
+    document.querySelectorAll('[data-fmfull]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var k=b.getAttribute('data-fmfull');state.fmFull=state.fmFull===k?null:k;render();};});
     document.querySelectorAll('[data-unit]').forEach(function(b){b.onclick=function(){state.unit=Number(b.getAttribute('data-unit'))||3;ls('ps_unit',String(state.unit));render();};});
     if(0)document.querySelectorAll('[data-list]').forEach(function(b){b.onclick=function(){state.list=b.getAttribute('data-list');ls('ps_list',state.list);state.open=null;render();};});
     document.querySelectorAll('[data-r].rbtn').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-r'),c=b.closest('.pc'),o=c.getAttribute('data-r')!=='true';c.setAttribute('data-r',o);state.ropen[k]=o;b.firstChild.nodeValue=o?'Hide research ':'Show research ';};});
