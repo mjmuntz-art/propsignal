@@ -501,7 +501,7 @@ details.fold[open] .foldh{border-bottom:1px solid var(--line)}
 .fbd{display:flex;gap:4px;flex-wrap:wrap}.fb{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.04em;padding:1px 6px;border-radius:4px;border:1px solid var(--line2);text-transform:uppercase;background:rgba(0,0,0,.35);color:var(--ink2);line-height:1.35}
 .fb.g{background:var(--mint);color:#062016;border-color:var(--mint)}.fb.l{color:var(--acc);border-color:var(--acc-line)}.fb.o{color:var(--amber);border-color:var(--amber-line)}.fb.x{color:var(--neg);border-color:var(--neg-line);background:rgba(42,22,17,.85)}.fb.w{color:var(--amber);border-color:var(--amber-line);background:rgba(30,25,10,.85)}
 .fnm{font-family:var(--disp);font-weight:800;font-size:21px;line-height:1.02;margin-top:5px;text-transform:uppercase}.fnm.m{font-size:17px}
-.fmt{font-size:10.5px;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-top:2px;line-height:1.3}
+.fmu{font-size:10.5px;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin-top:2px;line-height:1.3;white-space:nowrap}
 .fbar{margin-top:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;background:var(--bg2);border-top:2px solid var(--tc)}
 .fpk{font-family:var(--disp);font-weight:800;font-size:21px;padding:5px 10px;display:flex;align-items:baseline;gap:5px;text-transform:uppercase;white-space:nowrap}.fpk small{font-size:14px;color:var(--ink2)}.fpk .ov{color:var(--acc)}
 .fpx{font-family:var(--disp);font-weight:800;font-size:20px;line-height:1;padding:4px 10px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;align-items:flex-end;white-space:nowrap}.fpx small{font-family:var(--text);font-weight:600;font-size:10px;color:var(--ink3);margin-top:2px}
@@ -1109,7 +1109,7 @@ var API = (function(){
     var h='<div class="ff'+(fmc&&p.fmTag==='BOTH'&&p.stake?' two':'')+(fmc&&!p.stake||isVoid?' skip':'')+(open?' open':'')+'" style="'+tv(p.team)+'" data-fmo="'+esc(k)+'">'+
       '<div class="fhs">'+(p.teamLogo?'<img class="flg" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+(p.headshot?'<img class="fh" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':'')+'</div>'+
       '<div class="fmd">'+
-        '<div class="fwho"><div class="fbd">'+b.join('')+'</div><div class="fnm '+nmc+'">'+esc(p.player)+'</div><div class="fmt">'+esc(p.team||'')+(p.opp?(venueOf(p)==='A'?' @ ':' vs ')+esc(p.opp):'')+(p.tip?' · '+esc(p.tip):'')+'</div></div>'+
+        '<div class="fwho"><div class="fbd">'+b.join('')+'</div><div class="fnm '+nmc+'">'+esc(p.player)+'</div><div class="fmu">'+esc(p.team||'')+(p.opp?(venueOf(p)==='A'?' @ ':' vs ')+esc(p.opp):'')+(p.tip?' · '+esc(p.tip):'')+'</div></div>'+
         '<div class="fbar"><div class="fpk"><span class="'+(over?'ov':'')+'">'+(over?'OVER':'UNDER')+'</span> '+(p.line==null?'—':p.line)+'<small>'+esc(STAT[p.stat]||p.stat)+'</small></div><div class="fpx">'+esc(odds(p.odds))+'<small>'+esc(p.book||'')+'</small></div></div></div>'+
       (fmc?'<div class="fst"><div class="a">'+(p.stake?fmcMoney(p.stake):'$0')+'</div><div class="u">'+(p.stake?p.stake+' UNIT'+(p.stake>1?'S':''):'NOT BET')+'</div></div>':
         '<div class="fst edge"><div class="u">EDGE</div><div class="a">'+(p.edge==null?'—':pts(p.edge))+'</div>'+(p.grade?'<div class="u">'+esc(p.grade)+'</div>':'')+'</div>')+
