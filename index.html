@@ -1179,7 +1179,7 @@ var API = (function(){
     return '<div class="rrow2'+(p.blocked?' blk':'')+'" style="'+tv(p.team)+'">'+tcolHtml(p)+
       '<div class="who"><div class="caps nm">'+esc(p.player)+'</div><div class="pk"><span class="'+(over?'over':'under')+'">'+(over?'OVER':'UNDER')+'</span> '+(p.line==null?'—':p.line)+' '+esc(STAT[p.stat]||p.stat).toUpperCase()+'<span class="px">'+odds(p.odds)+' '+esc(p.book||'')+'</span></div>'+
       '<div class="m">'+(p.edge!=null?'edge '+pts(p.edge):'')+(p.grade?' · '+esc(p.grade):'')+(p.decision==='LEAN'?' · lean':'')+(clv.length?' · CLV '+esc(clv.join(', ')):'')+'</div>'+tag+'</div>'+vs+
-      '<div class="oc2 '+oc+'"><b>'+esc(out)+'</b><span class="n">'+(p.units==null?'':units(p.units))+'</span></div></div>';
+      '<div class="oc2 '+(p.card5&&!(p.stake>0)?'':oc)+'"><b>'+esc(p.card5&&!(p.stake>0)?'NOT BET':out)+'</b><span class="n">'+(p.units==null?'':units(p.units))+'</span></div></div>';
   }
   function dayData(date,cb){
     var d=state.data;
@@ -1233,7 +1233,14 @@ var API = (function(){
     var data=null;dayData(state.date,function(x){if(x)data=x;});
     if(!data)return h+'<div class="loading">Loading '+esc(dayLabel(state.date))+'…</div>';
     var plays;
-    if(state.list==='FMC'&&!state.every){var byK={},ord=[];data.plays.forEach(function(p){var L=p.lists||[];if(L.indexOf('FORMT')===-1&&L.indexOf('FORMAMT')===-1)return;if(/^BACKFILL/.test(p.source||''))return;
+    var cardRows=(state.list==='FMC'&&!state.every)?data.plays.filter(function(p){return (p.lists||[]).indexOf('FMCARD')!==-1;}):[];
+    if(cardRows.length){var tw={BOTH:'On both lists · 2 units',MORNING:'Morning SIX only · 1 unit',FORM:'Form SIX only · 1 unit'};
+      plays=cardRows.map(function(p){var o={};for(var q in p)o[q]=p[q];o.nb=o.stake>0?1:0;
+        if(o.stake>0)o.why2=(tw[o.fmTag]||'1 unit').replace('2 units',o.stake+' unit'+(o.stake>1?'s':'')).replace('1 unit',o.stake+' unit'+(o.stake>1?'s':''))+(o.fmFlag?' · '+o.fmFlag.toLowerCase():'');
+        else o.why2='Not bet · '+(o.teamDrop?'same team as a Form SIX pick':(o.fmFlag?o.fmFlag.toLowerCase():'skipped'))+(o.ifBet!=null&&o.outcome!=='VOID'?' · would have been '+(o.outcome==='HIT'?'a win':o.outcome==='MISS'?'a loss':o.outcome.toLowerCase()):'');
+        return o;});
+      plays.sort(function(a,b){return (b.stake>0)-(a.stake>0);});}
+    else if(state.list==='FMC'&&!state.every){var byK={},ord=[];data.plays.forEach(function(p){var L=p.lists||[];if(L.indexOf('FORMT')===-1&&L.indexOf('FORMAMT')===-1)return;if(/^BACKFILL/.test(p.source||''))return;
         var k=p.key||pkey(p);if(!byK[k]){var o={};for(var q in p)o[q]=p[q];o.nb=0;o.units=0;byK[k]=o;ord.push(k);}var x=byK[k];x.nb++;x.units=Math.round(((x.units||0)+(p.units||0))*100)/100;});
       var fT={};ord.forEach(function(k){var x=byK[k];if(x.nb===1&&(x.lists||[]).indexOf('FORMT')!==-1&&x.team)fT[x.team]=1;});
       plays=ord.map(function(k){var x=byK[k];var mOnly=x.nb===1&&(x.lists||[]).indexOf('FORMAMT')!==-1;
@@ -1253,9 +1260,9 @@ var API = (function(){
     h+='<div class="sbug"><div><div class="k">'+esc(dayLabel(state.date,{weekday:'long',month:'long',day:'numeric'}))+' · '+esc(state.every?'Every locked play':listName())+'</div>'+
       '<div><span class="big n">'+w+'–'+l+'</span><span class="ublk n '+(uu>0?'up':uu<0?'dn':'')+'">'+units(uu)+'</span></div>'+
       '<div class="pdots">'+plays.map(function(p){return '<i class="'+(p.outcome==='HIT'?'h':p.outcome==='MISS'?'m':p.outcome==='PUSH'?'p':'')+'" title="'+esc(p.player)+'"></i>';}).join('')+'</div></div>'+
-      '<div><div class="k">Hit rate</div><div class="v n">'+(w+l?Math.round(w/(w+l)*100)+'%':'—')+'</div><div class="s">'+plays.length+' locked play'+(plays.length===1?'':'s')+(fmcDay?' · '+(w+l)+' bets':'')+'</div></div>'+
+      '<div><div class="k">Hit rate</div><div class="v n">'+(w+l?Math.round(w/(w+l)*100)+'%':'—')+'</div><div class="s">'+(fmcDay&&cardRows.length?plays.length+' on the 5 PM card':plays.length+' locked play'+(plays.length===1?'':'s'))+(fmcDay?(cardRows.length?' · '+plays.filter(function(p){return p.stake>0;}).length+' bets, '+plays.filter(function(p){return p.stake>0&&(p.outcome==='HIT'||p.outcome==='MISS');}).reduce(function(a,p){return a+p.stake;},0)+'u risked':' · '+(w+l)+' bets'):'')+'</div></div>'+
       '<div><div class="k">Model cooled</div><div class="v n '+(cooled.length?cls(cu):'')+'">'+(cooled.length?cw+'–'+cl2:'—')+'</div><div class="s">'+(cooled.length?units(Math.round(cu*100)/100)+' if played':'none that day')+'</div></div>'+
-      (fmcDay?(function(){var b2=graded.filter(function(p){return p.nb>1;}),bw=0,bl=0,bu=0;b2.forEach(function(p){if(p.outcome==='HIT')bw+=2;else if(p.outcome==='MISS')bl+=2;bu+=p.units||0;});return '<div><div class="k">On both lists</div><div class="v n '+(b2.length?cls(bu):'')+'">'+(b2.length?bw+'–'+bl:'—')+'</div><div class="s">'+(b2.length?units(Math.round(bu*100)/100)+' at 2 units':'no shared picks that day')+'</div></div></div>';})():
+      (fmcDay?(function(){var b2=cardRows.length?graded.filter(function(p){return p.fmTag==='BOTH'&&p.stake>0;}):graded.filter(function(p){return p.nb>1;}),bw=0,bl=0,bu=0,bk=cardRows.length?1:2;b2.forEach(function(p){if(p.outcome==='HIT')bw+=bk;else if(p.outcome==='MISS')bl+=bk;bu+=p.units||0;});return '<div><div class="k">On both lists</div><div class="v n '+(b2.length?cls(bu):'')+'">'+(b2.length?bw+'–'+bl:'—')+'</div><div class="s">'+(b2.length?units(Math.round(bu*100)/100)+' at 2 units':'no shared picks that day')+'</div></div></div>';})():
       fm?'<div><div class="k">'+othN+'</div><div class="v n '+(oth&&oth.plays?cls(oth.units):'')+'">'+(oth&&oth.plays?oth.w+'–'+oth.l:'—')+'</div><div class="s">'+(oth&&oth.plays?units(oth.units)+' that day':'not tracked that day')+'</div></div></div>':
       '<div><div class="k">Morning card</div><div class="v n '+(morning.length?cls(mu):'')+'">'+(morning.length?mw+'–'+ml:'—')+'</div><div class="s">'+(morning.length?'replay · '+units(Math.round(mu*100)/100):'not replayed yet')+'</div></div></div>');
     if(bfDay)h+='<p class="note2" style="margin:0 0 14px"><b>Backtest day.</b> This date is rebuilt from the calibration log, which only saved the morning lines, so Form SIX and Morning SIX show the same picks. The two lists split once live tracking began: 11/5 for All six, 11/10 for One per team.</p>';
