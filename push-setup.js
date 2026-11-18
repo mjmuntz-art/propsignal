@@ -7,9 +7,9 @@
   if (!config || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(config.oneSignalAppId || "")) return;
   if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
 
-  var types = ["projections", "results", "locked"];
+  var types = ["fmcard", "projections", "results", "locked"];
   var storageKey = "push-preferences-" + config.appKey;
-  var prefs = { enabled: false, projections: true, results: true, locked: true };
+  var prefs = { enabled: false, fmcard: true, projections: false, results: false, locked: false };
   try {
     var previous = JSON.parse(localStorage.getItem(storageKey) || "null");
     if (previous) {
@@ -24,13 +24,14 @@
     "#app-push-root{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:9000;font:14px/1.4 system-ui,-apple-system,sans-serif;color:#e9edf3}",
     "#app-push-root *{box-sizing:border-box}",
     "#app-push-toggle{display:block;margin-left:auto;border:1px solid #4a647a;border-radius:24px;padding:10px 16px;background:#142532;color:#fff;font:600 14px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer}",
-    "#app-push-panel{position:absolute;right:0;bottom:54px;width:min(310px,calc(100vw - 28px));padding:16px;background:#142532;border:1px solid #4a647a;border-radius:13px;box-shadow:0 12px 32px #0008}",
+    "#app-push-panel{position:absolute;right:0;bottom:54px;width:min(310px,calc(100vw - 28px));padding:16px;background:#18202A;border:1px solid #38485B;border-radius:13px;box-shadow:0 12px 32px #0008}",
+    "#app-push-root.slot{top:calc(64px + env(safe-area-inset-top));bottom:auto}#app-push-root.slot #app-push-toggle{display:none}#app-push-root.slot #app-push-panel{position:static}",
     "#app-push-panel[hidden]{display:none}",
     "#app-push-panel strong{display:block;font-size:16px;margin:0 0 5px}",
     "#app-push-panel p{margin:0 0 12px;color:#c2d0de;font-size:12px}",
     "#app-push-panel label{display:flex;align-items:center;gap:10px;padding:7px 0;color:#e9edf3}",
-    "#app-push-panel input{width:16px;height:16px;accent-color:#5dd7a2}",
-    "#app-push-action{background:#5dd7a2;color:#10251e;border:0;border-radius:9px;font:700 13px system-ui;padding:11px;width:100%;cursor:pointer;margin:10px 0 4px}",
+    "#app-push-panel input{width:16px;height:16px;accent-color:#6F94FF}",
+    "#app-push-action{background:#6F94FF;color:#0B1530;border:0;border-radius:9px;font:700 13px system-ui;padding:11px;width:100%;cursor:pointer;margin:10px 0 4px}",
     "#app-push-status{font-size:12px;color:#c2d0de;min-height:17px}",
     "@media(max-width:760px){#app-push-root{bottom:calc(86px + env(safe-area-inset-bottom))}}"
   ].join("\n");
@@ -42,6 +43,7 @@
     '<button type="button" id="app-push-toggle" aria-expanded="false" aria-controls="app-push-panel">Alerts</button>' +
     '<div id="app-push-panel" hidden><strong>Notification settings</strong>' +
     '<p>Choose which updates you receive from this app. Notifications work on iPhone after adding it to your Home Screen.</p>' +
+    '<label><input type="checkbox" data-push-type="fmcard"> F/M SIX Combined: 5 PM card + later locks</label>' +
     '<label><input type="checkbox" data-push-type="projections"> Projections and new plays</label>' +
     '<label><input type="checkbox" data-push-type="results"> Graded results</label>' +
     '<label><input type="checkbox" data-push-type="locked"> Locked or official selections</label>' +
@@ -49,6 +51,8 @@
     '<div id="app-push-status" aria-live="polite">Connecting to push service…</div></div>';
   document.body.appendChild(root);
   var toggle = document.getElementById("app-push-toggle");
+  var slot = document.getElementById("pushSlot");
+  if (slot) { root.classList.add("slot"); slot.style.display = ""; }
   var panel = document.getElementById("app-push-panel");
   var action = document.getElementById("app-push-action");
   var status = document.getElementById("app-push-status");
@@ -80,10 +84,14 @@
         "Alerts for this app are off";
     }
   }
-  toggle.addEventListener("click", function () {
+  function flip() {
     panel.hidden = !panel.hidden;
     toggle.setAttribute("aria-expanded", String(!panel.hidden));
-  });
+    if (slot) slot.classList.toggle("on", !panel.hidden);
+  }
+  toggle.addEventListener("click", flip);
+  if (slot) slot.addEventListener("click", function (e) { e.stopPropagation(); flip(); });
+  document.addEventListener("click", function (e) { if (!panel.hidden && slot && !root.contains(e.target) && e.target !== slot && !slot.contains(e.target)) flip(); });
   root.querySelectorAll("[data-push-type]").forEach(function (box) {
     box.addEventListener("change", function () {
       prefs[box.getAttribute("data-push-type")] = box.checked;
