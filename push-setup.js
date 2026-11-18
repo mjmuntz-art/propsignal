@@ -52,7 +52,7 @@
   document.body.appendChild(root);
   var toggle = document.getElementById("app-push-toggle");
   var slot = document.getElementById("pushSlot");
-  if (slot) { root.classList.add("slot"); slot.style.display = ""; }
+  if (slot) { root.classList.add("slot"); var rb = document.getElementById("refresh"); slot.style.display = rb ? getComputedStyle(rb).display : "inline-flex"; }
   var panel = document.getElementById("app-push-panel");
   var action = document.getElementById("app-push-action");
   var status = document.getElementById("app-push-status");
