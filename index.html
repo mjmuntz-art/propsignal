@@ -1104,7 +1104,7 @@ var API = (function(){
     if(p.outcome)b.push('<span class="fb '+(p.outcome==='HIT'?'g':p.outcome==='MISS'?'x':'')+'">'+esc(p.outcome)+(p.actual!=null?' · '+p.actual:'')+'</span>');
     var sh=function(t){return String(t||'').replace(/\s?(AM|PM)$/i,function(m){return m.trim().toLowerCase()==='am'?'a':'p';});};
     var pend=fmc?p.formPending:!p.locked&&!p.morningView;
-    if(!p.outcome&&!isLive&&pend)b.push('<span class="fb o">Locks '+esc(sh(p.locksAt))+'</span>');
+    if(!p.outcome&&!isLive&&pend)b.push('<span class="fb o">'+(p.locksAt?'Locks '+esc(sh(p.locksAt)):'Locking now')+'</span>');
     else if(!p.outcome&&!isLive)b.push('<span class="fb l">Locked '+esc(sh(p.morningView||p.fmTag==='MORNING'?(p.firstAt||''):(p.lockedAt||p.firstAt||'')))+'</span>');
     var h='<div class="ff'+(fmc&&p.fmTag==='BOTH'&&p.stake?' two':'')+(fmc&&!p.stake||isVoid?' skip':'')+(open?' open':'')+'" style="'+tv(p.team)+'" data-fmo="'+esc(k)+'">'+
       '<div class="fhs">'+(p.teamLogo?'<img class="flg" alt="" src="'+esc(p.teamLogo)+'" onerror="this.remove()">':'')+(p.headshot?'<img class="fh" alt="" src="'+esc(p.headshot)+'" onerror="this.remove()">':'')+'</div>'+
